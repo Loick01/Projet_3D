@@ -1,6 +1,6 @@
 #include <ParamsWindow.hpp>
 
-char ParamsWindow::nameStructure[512]; // Permet d'éviter les erreurs de lien à la compilation
+// char ParamsWindow::nameStructure[512]; // Permet d'éviter les erreurs de lien à la compilation
 
 ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player){
     this->style = style;
@@ -159,6 +159,7 @@ void ParamsWindow::draw(){
     ImGui::Spacing();
 
     if(this->inEditor){
+        /*
         ImGui::Text("Nom du fichier de la structure : ");
         ImGui::SameLine();
         ImGui::InputText(" ", nameStructure, IM_ARRAYSIZE(nameStructure));
@@ -170,6 +171,7 @@ void ParamsWindow::draw(){
                 std::cout << "Veuillez saisir un nom pour le fichier de la structure\n";
             }
         }
+        */
     }else{
         if (ImGui::SliderInt("Longueur terrain", this->planeWidth, 1, 22)){
             this->mg->setWidthMap(*(this->planeWidth));

@@ -2,7 +2,7 @@
 
 #define CHUNK_SIZE 32
 
-std::vector<std::vector<Structure>> Chunk::structures; // Permet d'éviter les erreurs de lien à la compilation
+// std::vector<std::vector<Structure>> Chunk::structures; // Permet d'éviter les erreurs de lien à la compilation
 
 Chunk::Chunk(glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed){
     this->position = position;
@@ -222,7 +222,7 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
     }
 
 
-
+    /*
     // On génère les structures (seulement après avoir généré le terrain)
     for (int k=0;k<CHUNK_SIZE;k++){
         for (int j=0;j<CHUNK_SIZE;j++){     
@@ -235,8 +235,10 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
             }
         }
     }
+    */
 }
 
+/*
 Structure Chunk::readFile(std::ifstream &file){
     Structure resStructure;
     std::string line;
@@ -251,11 +253,15 @@ Structure Chunk::readFile(std::ifstream &file){
     }
     return resStructure;
 }
+*/
 
+/*
 void Chunk::setListeStructures(std::vector<std::vector<Structure>> liste){
     structures = liste;
 }
+*/
 
+/*
 void Chunk::buildStructure(int i, int j, int k){
     Structure to_build = structures[this->ID][rand()%structures[this->ID].size()]; // On construit l'une des structures disponibles 
     for (int n = 0 ; n < to_build.blocks.size() ; n++){
@@ -272,6 +278,7 @@ void Chunk::buildStructure(int i, int j, int k){
         }
     }
 }
+*/
 
 void Chunk::loadChunk(){
     // Très important de vider les vectors, sinon quand on modifie un chunk on ne voit aucune différence

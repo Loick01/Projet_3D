@@ -1,6 +1,6 @@
 #include <TerrainControler.hpp>
 
-TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure){
+TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave/*, std::vector<std::vector<std::string>> nomStructure*/){
     this->planeWidth = planeWidth;
     this->planeLength = planeLength; 
     this->planeHeight = planeHeight;
@@ -11,6 +11,7 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     this->mouseLeftClickHold = false;
     this->previousIdInChunk = -2; // Attention à ne surtout pas initialiser avec -1 (sinon on tentera de casser un bloc hors liste de voxel)
 
+    /*
     // Chargement des structures
     std::vector<std::vector<Structure>> structures;
     for (int i = 0 ; i < nomStructure.size() ; i++){
@@ -22,7 +23,8 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
         }
         structures.push_back(structuresBiome);
     }
-    Chunk::setListeStructures(structures);
+    */
+    //Chunk::setListeStructures(structures);
 
     this->mg = new MapGenerator(this->planeWidth, this->planeLength, this->seedTerrain, this->octave); 
     this->mg->generateImage();
@@ -203,6 +205,7 @@ void TerrainControler::drawTerrain(){
     }
 }
 
+/*
 void TerrainControler::saveStructure(std::string filePath){
     filePath = "../Structures/" + filePath + ".txt";
     std::ofstream fileStructure(filePath);
@@ -223,6 +226,7 @@ void TerrainControler::saveStructure(std::string filePath){
     }
     fileStructure.close();
 }
+*/
 
 bool TerrainControler::checkHoldLeftClick(glm::vec3 camera_position, glm::vec3 camera_target, float deltaTime, bool modeJeu, GLuint programID){
     if (this->mouseLeftClickHold){

@@ -12,7 +12,7 @@
 float deltaTime = 0.0f;	
 float lastFrame = 0.0f;
 
-GLuint programID, programID_HUD,programID_Entity;
+GLuint programID, programID_HUD; //,programID_Entity;
 
 bool isImGuiShow = true;
 bool switchToEditor = false;
@@ -24,9 +24,9 @@ glm::vec3 camera_up = glm::vec3(0.0f, 1.0f,  0.0f);
 
 bool cameraOrbitale = false;
 bool cameraLibre = false; // Caméra libre par défaut
-bool cameraMouseLibre = false;
-bool cameraMousePlayer = true;
-int speedCam = 60;
+bool cameraMouseLibre = true;
+bool cameraMousePlayer = false;
+int speedCam = 120;
 double previousX = SCREEN_WIDTH / 2;
 double previousY = SCREEN_HEIGHT / 2;
 bool firstMouse = true;
@@ -48,10 +48,10 @@ int handBlock = blockInHotbar[indexHandBlock]; // ID du block que le joueur est 
 
 bool showHud = true;
 int isShadow = 1; // 1 si on utilise les ombres dans le shader, 0 sinon
-bool modeJeu = false; // true pour créatif, false pour survie
+bool modeJeu = true; // true pour créatif, false pour survie
 bool playerDie;
 
-std::vector<Entity*> listeEntity;
+//std::vector<Entity*> listeEntity;
 
 // Cette objet permet de lancer tous les sons qui seront nécéssaire
 Sound *soundManager;
@@ -283,6 +283,7 @@ void playRandomMusic() { // On a pas géré le cas où la nouvelle musique joué
 }
 // --------------------------------------------------------------------------
 
+/*
 void spawnEntity(int m, int n){
 	// Génération des entités : m zombies et n cochons 
 	listeEntity.clear();
@@ -298,6 +299,7 @@ void spawnEntity(int m, int n){
         listeEntity[m+j]->loadEntity();
     }
 }
+*/
 
 int main(){
     if( !glfwInit()){
@@ -370,8 +372,9 @@ int main(){
 
     programID = LoadShaders("../shaders/vertexShader.vert", "../shaders/fragmentShader.frag");
     programID_HUD = LoadShaders("../shaders/hud_vertex.vert", "../shaders/hud_frag.frag");
-    programID_Entity = LoadShaders("../shaders/entity_vertex.vert", "../shaders/entity_frag.frag");
+    //programID_Entity = LoadShaders("../shaders/entity_vertex.vert", "../shaders/entity_frag.frag");
 
+    /*
     std::vector<std::string> structureBiome0;
     structureBiome0.push_back("../Structures/Tree.txt");
     structureBiome0.push_back("../Structures/Tree_2.txt");
@@ -393,9 +396,10 @@ int main(){
     nomStructure.push_back(structureBiome0);
     nomStructure.push_back(structureBiome1);
     nomStructure.push_back(structureBiome2);
+    */
 
 	// Les 2 premiers paramètres du constructeur de TerrainControleur sont la taille du terrain (en nombre de chunk), en longueur et en profondeur (ici 3x3)
-    terrainControler = new TerrainControler(3, 3, 1, 3, 1000, 4, nomStructure);
+    terrainControler = new TerrainControler(3, 3, 1, 3, 1000, 4/*, nomStructure*/);
     player = new Player(glm::vec3(-0.5f,10.0f,-0.5f), 1.8f, 0.6f, 6.0f, 1.5f); // Le joueur fait 1.8 bloc de haut, et 0.6 bloc de large et de long
     hitboxPlayer = player->getHitbox();
 
@@ -415,9 +419,9 @@ int main(){
     GLuint ModelMatrix = glGetUniformLocation(programID,"Model");
     // La matrice Model ne sera pas envoyé aux shaders des entités (ça ne sert à rien)
     GLuint ViewMatrix = glGetUniformLocation(programID,"View");
-    GLuint ViewEntity = glGetUniformLocation(programID_Entity,"View");
+    //GLuint ViewEntity = glGetUniformLocation(programID_Entity,"View");
     GLuint ProjectionMatrix = glGetUniformLocation(programID,"Projection");
-    GLuint ProjectionEntity = glGetUniformLocation(programID_Entity,"Projection");
+    //GLuint ProjectionEntity = glGetUniformLocation(programID_Entity,"Projection");
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -426,7 +430,7 @@ int main(){
     // Chargement des textures
     GLint atlasTexture = loadTexture2DFromFilePath("../Textures/Blocks/atlas.png");
     GLint hudTexture = loadTexture2DFromFilePath("../Textures/HUD/hud.png");
-    GLint entityTexture = loadTexture2DFromFilePath("../Textures/Entity/entity.png");
+    //GLint entityTexture = loadTexture2DFromFilePath("../Textures/Entity/entity.png");
 
     glUseProgram(programID);
     if (atlasTexture != -1) {
@@ -443,18 +447,20 @@ int main(){
         glUniform1i(glGetUniformLocation(programID_HUD, "hudTexture"), 1);
     }
 
+    /*
     glUseProgram(programID_Entity);
     if (entityTexture != -1) {
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, entityTexture);
         glUniform1i(glGetUniformLocation(programID_Entity, "entityTexture"), 2);
     }
+    */
 
     skybox->bindCubemap(GL_TEXTURE3, 3); 
 
     lastFrame = glfwGetTime(); // Si on ne fait pas ça, le joueur tombe beaucoup trop vite à la première frame
     
-    spawnEntity(10,10);
+    //spawnEntity(10,10);
 
     playerDie = false;
 
@@ -470,10 +476,12 @@ int main(){
 
             processInput(window);
             
+            /*
             if (imgui->getClearEntity()){ // Fais réapparaître les entités quand on regénère un terrain dans la fenêtre ImGui
             	imgui->resetClearEntity();
             	spawnEntity(10,10);
             }
+            */
 
             glm::vec3 bottomPointPlayer = hitboxPlayer->getBottomPoint();
 
@@ -522,7 +530,7 @@ int main(){
 
             if (terrainControler->checkHoldLeftClick(camera_position, camera_target, deltaTime, modeJeu, programID)){
                 soundManager->playBreakSound();
-            }else if (terrainControler->getMouseLeftClickHold()){
+            }/*else if (terrainControler->getMouseLeftClickHold()){
                 std::vector<Entity*> entityNearPlayer; // Récupère les entités prochent du joueur
                 for (int i = 0 ; i  < listeEntity.size() ; i++){
                     if (listeEntity[i] != nullptr){
@@ -533,6 +541,7 @@ int main(){
                     }
                 }         
             }
+            */
 
             // Affichage de la skybox
             skybox->drawSkybox(Model, Projection, View);
@@ -555,6 +564,7 @@ int main(){
                 }
             }
 
+            /*
             if (!switchToEditor){
                 glUseProgram(programID_Entity);
                 glUniformMatrix4fv(ViewEntity,1,GL_FALSE,&View[0][0]);
@@ -579,6 +589,7 @@ int main(){
                     }
                 }
             }
+            */
 
             if (playerDie){
                 for (int i = 0 ; i < backgroundMusicList.size() ; i++){ // On arrête toutes les musiques de fond
@@ -605,12 +616,14 @@ int main(){
                 cameraOrbitale = false;
                 cameraLibre = false;
                 
+                /*
                 for (int i = 0 ; i < listeEntity.size() ; i++){
                 	if (listeEntity[i] != nullptr){
                 		delete listeEntity[i];
                 	}
                 }
                 listeEntity.clear();
+                */
 
                 switchToEditor = true;
                 delete terrainControler; // On supprime l'ancien terrain (on perd donc les modfications faites dessus)
@@ -623,6 +636,7 @@ int main(){
             
             if (isImGuiShow){
                 imgui->draw();
+                /*
                 if (imgui->getClearEntity()){
                 	for (int i = 0 ; i < listeEntity.size() ; i++){
                 		if (listeEntity[i] != nullptr){
@@ -630,6 +644,7 @@ int main(){
 		            	}
                 	}
                 }
+                */
             }
         }
         glfwSwapBuffers(window);
@@ -651,11 +666,13 @@ int main(){
     delete hud;
     delete player;
     delete window_object;
+    /*
     for (int i = 0 ; i < listeEntity.size() ; i++){
         if (listeEntity[i] != nullptr){
             delete listeEntity[i];
         }
     }
+    */
     glfwTerminate();
     return 0;
 }

@@ -29,7 +29,7 @@ class TerrainControler{
         int previousIdInChunk; 
 
     public :
-        TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure);
+        TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave/*, std::vector<std::vector<std::string>> nomStructure*/);
         TerrainControler(); // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
         ~TerrainControler();
         std::vector<Chunk*> getListeChunks();
@@ -46,7 +46,7 @@ class TerrainControler{
         void breakBlock(LocalisationBlock lb);
         bool tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock);
         void drawTerrain();
-        void saveStructure(std::string filePath);
+        //void saveStructure(std::string filePath);
         bool checkHoldLeftClick(glm::vec3 camera_position, glm::vec3 camera_target, float deltaTime, bool modeJeu, GLuint programID);
         void setMouseLeftClickHold(bool mouseLeftClickHold);
         bool getMouseLeftClickHold();
