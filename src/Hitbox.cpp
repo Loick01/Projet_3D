@@ -103,15 +103,18 @@ bool Hitbox::getLateralMovePossible(bool axisToCheck,float directionCheck, glm::
 float Hitbox::checkTopAndBottomCollision(bool hasUpdate, float deltaTime, TerrainControler *terrainControler){
     int planeWidth = terrainControler->getPlaneWidth();
     int planeLength = terrainControler->getPlaneLength();
+    int planeHeight = terrainControler->getPlaneHeight();
     std::vector<Chunk*> listeChunks = terrainControler->getListeChunks();
     
     // Détermine la cellule ou se trouve le joueur
     glm::vec3 pPlayer = this->getBottomPoint();
     
     int numLongueur = floor(pPlayer[0]) + 16*planeWidth;
-    int numHauteur = floor(pPlayer[1]-0.001) + 16;
+    int numHauteur = floor(pPlayer[1]-0.001);
     int numProfondeur = floor(pPlayer[2]) + 16*planeLength;
-    if (numHauteur < -5){
+    std::cout << "Num hauteur = " << numHauteur << "\n";
+    if (numHauteur < -25){
+        std::cout << "Num hauteur = " << numHauteur << "\n";
         return -1.0; // Ici on met une valeur spéciale pour identifier le moment où l'entité est tombé dans le vide
     }else if (numLongueur < 0 || numLongueur > (planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (planeLength*32)-1 || numHauteur < 0 || numHauteur > 31){
         // C'est contre_intuitif, mais on ne peut pas juste vérifier si le joueur a déjà sauté.
@@ -121,20 +124,20 @@ float Hitbox::checkTopAndBottomCollision(bool hasUpdate, float deltaTime, Terrai
             this->forceJump -= this->gravity*deltaTime;
             this->setCanJump(false);
         }
-    }else{
-        int indiceBlock = numHauteur *1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel dans lequel on considère que le joueur se trouve
-        Voxel *v = listeChunks[(numLongueur/32) * planeLength + numProfondeur/32]->getListeVoxels()[indiceBlock];
+    }else if (numHauteur >= 0){
+        int indiceBlock = (numHauteur%32) *1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel dans lequel on considère que le joueur se trouve
+        Voxel *v = listeChunks[(numLongueur/32) * planeLength * planeHeight + (numProfondeur/32) * planeHeight + numHauteur/32]->getListeVoxels()[indiceBlock];
     
         if (!this->getCanJump()){ // Collision vers le haut (temporaire, il faudra faire plus propre)
             glm::vec3 pPlayerTop = pPlayer;
             pPlayerTop[1] += this->heightHitbox; // Attention à bien mettre une hitbox plus haute que la position de la caméra (sinon on peut voir parfois à travers des blocs)
             int NL = floor(pPlayerTop[0]) + 16*planeWidth;
-            int NH = floor(pPlayerTop[1]) + 16;
+            int NH = floor(pPlayerTop[1]);
             int NP = floor(pPlayerTop[2]) + 16*planeLength;
             // Il ne faut pas oublier de vérifier si le point au sommet de la hitbox du joueur se trouve bien dans le chunk
-            if (!(NL < 0 || NL > (planeWidth*32)-1 || NP < 0 || NP > (planeLength*32)-1 || NH < 0 || NH > 31)){
-                int index = NH *1024 + (NP%32) * 32 + (NL%32); // Indice du voxel dans lequel on considère que le joueur se trouve
-                Voxel *vTop = listeChunks[(NL/32) * planeLength + NP/32]->getListeVoxels()[index];
+            if (!(NL < 0 || NL > (planeWidth*32)-1 || NP < 0 || NP > (planeLength*32)-1 || NH < 0 || NH > (planeHeight*32)-1)){
+                int index = (NH%32) *1024 + (NP%32) * 32 + (NL%32); // Indice du voxel dans lequel on considère que le joueur se trouve
+                Voxel *vTop = listeChunks[(NL/32) * planeLength * planeHeight + (NP/32) * planeHeight + NH/32]->getListeVoxels()[index];
                 if (vTop != nullptr){
                     this->forceJump = 0.0f;
                     this->move(glm::vec3(0.0f,floor(pPlayerTop[1]) - pPlayerTop[1] - 0.01,0.0f)); // Le 0.01 assure que le joueur ne rentre pas dans le bloc
@@ -151,9 +154,9 @@ float Hitbox::checkTopAndBottomCollision(bool hasUpdate, float deltaTime, Terrai
             
             // On fait attention à ne pas afficher le joueur à l'intérieur d'un bloc (même pendant une frame, c'est plus propre)
             pPlayer = this->getBottomPoint();
-            numHauteur = floor(pPlayer[1]-0.001) + 16;
-            indiceBlock = numHauteur *1024 + (numProfondeur%32) * 32 + (numLongueur%32);
-            v = listeChunks[(numLongueur/32) * planeLength + numProfondeur/32]->getListeVoxels()[indiceBlock];
+            numHauteur = floor(pPlayer[1]-0.001);
+            indiceBlock = (numHauteur%32) *1024 + (numProfondeur%32) * 32 + (numLongueur%32);
+            v = listeChunks[(numLongueur/32) * planeLength * planeHeight + (numProfondeur/32) * planeHeight + numHauteur/32]->getListeVoxels()[indiceBlock];
             if (v != nullptr){
                 if(v->getID()==33 && this->forceJump<-0.1){
                     this->forceJump*=-0.85;
