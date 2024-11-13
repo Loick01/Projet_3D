@@ -52,7 +52,7 @@ Hud::Hud(int screen_width, int screen_height){
 }
 
 Hud::~Hud(){
-    std::cout << "Destruction de Hud\n";
+    // std::cout << "Destruction de Hud\n";
     glDeleteBuffers(1, &(this->vertexbuffer));
     glDeleteBuffers(1, &(this->elementbuffer));
 }

@@ -27,6 +27,7 @@ class TerrainControler{
         float accumulateurDestructionBlock;
         bool mouseLeftClickHold;
         int previousIdInChunk; 
+        FastNoise noiseGenerator;
 
     public :
         TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave/*, std::vector<std::vector<std::string>> nomStructure*/);
@@ -40,6 +41,7 @@ class TerrainControler{
         int getPlaneLength();
         int* getRefToPlaneLength();
         int getPlaneHeight();
+        int* getRefToPlaneHeight();
         int* getRefToSeedTerrain();
         int* getRefToOctave();
         LocalisationBlock tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position);

@@ -13,6 +13,7 @@ class ParamsWindow{
         glm::vec3* posJoueur;
         int* planeWidth;
         int* planeLength;
+        int* planeHeight;
         TerrainControler *terrainControler;
         MapGenerator *mg;
         int *seedTerrain;

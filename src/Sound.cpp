@@ -18,7 +18,7 @@ Sound::Sound(){
 }
 
 Sound::~Sound(){
-	std::cout << "Destructeur de Sound\n";
+	// std::cout << "Destructeur de Sound\n";
     ma_sound_uninit(this->breakBlock);
     delete this->breakBlock;
     ma_sound_uninit(this->createBlock);

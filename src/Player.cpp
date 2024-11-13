@@ -9,7 +9,7 @@ Player::Player(glm::vec3 position, float playerHeight, float playerWidth, float 
 }
 
 Player::~Player(){
-    std::cout << "Destructeur de Player\n";
+    // std::cout << "Destructeur de Player\n";
     delete this->hitbox;
 }
 

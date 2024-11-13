@@ -7,7 +7,7 @@ Skybox::Skybox() {
 }
 
 Skybox::~Skybox(){
-    std::cout << "Destruction de Skybox\n";
+    // std::cout << "Destruction de Skybox\n";
     glDeleteBuffers(1, &(this->vertexbuffer));
     glDeleteBuffers(1, &(this->elementbuffer));
 }

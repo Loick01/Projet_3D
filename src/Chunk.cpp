@@ -4,18 +4,24 @@
 
 // std::vector<std::vector<Structure>> Chunk::structures; // Permet d'éviter les erreurs de lien à la compilation
 
-Chunk::Chunk(glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed){
+Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool topChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed){
     this->position = position;
     //this->ID=rand()%3;
     this->ID=0;
     if (typeChunk==0){
         this->buildFullChunk();
     }else if (typeChunk==1){
+        this->buildCheeseChunk(i, j, k, noiseGenerator, extreme);
+    }else if (typeChunk==1){
         this->buildSinusChunk();
     }else if (typeChunk==2){
         this->buildFlatChunk();
     }else if (typeChunk==3){
-        this->buildProceduralChunk(dataPixels, widthHeightmap, heightHeightmap, posWidthChunk, posLengthChunk, seed);
+        if (topChunk){
+            this->buildProceduralChunk(dataPixels, widthHeightmap, lengthHeightMap, posWidthChunk, posLengthChunk, seed);
+        }else{
+            this->buildCheeseChunk(i, j, k, noiseGenerator, extreme);
+        }
     }
 }
 
@@ -25,7 +31,7 @@ Chunk::Chunk(glm::vec3 position){
 }
 
 Chunk::~Chunk(){
-    std::cout << "Destruction de Chunk\n";
+    // std::cout << "Destruction de Chunk\n";
     for (int i = 0 ; i < this->listeVoxels.size() ; i++){
         delete this->listeVoxels[i];
     }
@@ -54,10 +60,10 @@ void Chunk::buildFullChunk(){
     this->listeVoxels.clear();
 
     for (int k=0;k<CHUNK_SIZE;k++){
-        for (int j=0;j<CHUNK_SIZE;j++){     
-            for (int i=0;i<CHUNK_SIZE;i++){     
+        for (int j=0;j<CHUNK_SIZE;j++){
+            for (int i=0;i<CHUNK_SIZE;i++){
                 Voxel *vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),rand()%NB_BLOCK); 
-                if (i*j*k==0 || i==CHUNK_SIZE-1 || j==CHUNK_SIZE-1 ||k==CHUNK_SIZE-1){
+                if (i*j*k==0 || i==CHUNK_SIZE-1 || j==CHUNK_SIZE-1 || k==CHUNK_SIZE-1){
                     vox->setVisible(true);
                     vox->setId(GRASS_BLOCK);
                 }
@@ -65,6 +71,65 @@ void Chunk::buildFullChunk(){
             }
         }
     }
+}
+
+void Chunk::buildCheeseChunk(int a, int b, int c, FastNoise noiseGenerator, bool extreme){
+    this->listeVoxels.clear();
+
+    for (int k=0;k<CHUNK_SIZE;k++){
+        for (int j=0;j<CHUNK_SIZE;j++){     
+            for (int i=0;i<CHUNK_SIZE;i++){ 
+                float density = noiseGenerator.GetSimplex((a*32 + i) * 6, (c*32 + k) * 6, (b*32 + j) * 6);
+                if (density > 0){
+                    int typeBlock = rand() % 500;
+                    int sizeVein = rand() % 3;
+                    Voxel *vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),(typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
+                    vox->setVisible(true);
+
+                    /*
+                    if (extreme){
+                        if (i*j*k==0 || i==CHUNK_SIZE-1 || j==CHUNK_SIZE-1 || k==CHUNK_SIZE-1){
+                            vox->setVisible(true);
+                        }
+                    }
+                    */
+                    this->listeVoxels.push_back(vox);
+
+                    /*
+                    // Génération des filons de minerais
+                    int idToGenerate = listeVoxels[k*1024+32*j+i]->getID();
+                    if((idToGenerate==DIAMOND_ORE || idToGenerate==IRON_ORE) && j>=sizeVein && i>=sizeVein && k>=sizeVein && j<CHUNK_SIZE){
+                        for(int l=1;l<=sizeVein;l++){
+                            for(int m=1;m<=sizeVein;m++){
+                                for(int n=1;n<=sizeVein;n++){
+                                    if(rand()%(m*4)==0)listeVoxels[k*1024+32*(j-m)+i]->setId(idToGenerate);
+                                    if(rand()%(n*4)==0)listeVoxels[k*1024+32*j+(i-n)]->setId(idToGenerate);
+                                    if(rand()%(n*4)==0)listeVoxels[k*1024+32*(j-m)+(i-n)]->setId(idToGenerate);
+                                    if(rand()%(l*4)==0)listeVoxels[(k-l)*1024+32*j+i]->setId(idToGenerate);
+                                    if(rand()%(m*4)==0)listeVoxels[(k-l)*1024+32*(j-m)+i]->setId(idToGenerate);
+                                    if(rand()%(l*4)==0)listeVoxels[(k-l)*1024+32*j+(i-n)]->setId(idToGenerate);
+                                    if(rand()%(m*4)==0)listeVoxels[(k-l)*1024+32*(j-m)+(i-n)]->setId(idToGenerate);
+                                }
+                            }
+                        }
+                    }
+                    */
+                }else{
+                    this->listeVoxels.push_back(nullptr);
+                }
+                
+            }
+        }
+    }
+
+    /*
+    Voxel *vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),rand()%NB_BLOCK); 
+    if (i*j*k==0 || i==CHUNK_SIZE-1 || j==CHUNK_SIZE-1 ||k==CHUNK_SIZE-1){
+        vox->setVisible(true);
+        vox->setId(GRASS_BLOCK);
+    }
+    this->listeVoxels.push_back(vox);
+    */    
 }
 
 void Chunk::buildFlatChunk(){
@@ -114,7 +179,7 @@ void Chunk::buildSinusChunk(){
     }
 }
 
-void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed){
+void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed){
     this->listeVoxels.clear();
 
     srand(seed+posWidthChunk+posLengthChunk);
@@ -174,12 +239,14 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
         }
     }
 
+    /*
     // On place de la bedrock à la dernière couche
     for (int j=0;j<CHUNK_SIZE;j++){     
         for (int i=0;i<CHUNK_SIZE;i++){
             this->listeVoxels[j*CHUNK_SIZE+i]->setId(5);
         }
     }
+    */
 
     // On complète les trous de la génération (quand la différence de hauteur entre 2 blocs adjacents est > 1)
     for (int j=0;j<CHUNK_SIZE;j++){     

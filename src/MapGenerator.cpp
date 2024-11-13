@@ -22,7 +22,7 @@ MapGenerator::MapGenerator(){
 }
 
 MapGenerator::~MapGenerator(){
-  std::cout << "Destructeur de MapGenerator\n";
+  // std::cout << "Destructeur de MapGenerator\n";
 }
 
 void MapGenerator::generateImage(){
@@ -53,6 +53,10 @@ void MapGenerator::generateImage(){
 
 void MapGenerator::setWidthMap(int widthMap){
   this->widthMap = widthMap;
+}
+
+void MapGenerator::setLengthMap(int lengthMap){
+  this->lengthMap = lengthMap;
 }
 
 void MapGenerator::setHeightMap(int heightMap){

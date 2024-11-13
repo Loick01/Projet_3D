@@ -26,7 +26,7 @@ bool cameraOrbitale = false;
 bool cameraLibre = false; // Caméra libre par défaut
 bool cameraMouseLibre = true;
 bool cameraMousePlayer = false;
-int speedCam = 120;
+int speedCam = 200;
 double previousX = SCREEN_WIDTH / 2;
 double previousY = SCREEN_HEIGHT / 2;
 bool firstMouse = true;
@@ -399,8 +399,8 @@ int main(){
     */
 
 	// Les 2 premiers paramètres du constructeur de TerrainControleur sont la taille du terrain (en nombre de chunk), en longueur et en profondeur (ici 3x3)
-    terrainControler = new TerrainControler(3, 3, 1, 3, 1000, 4/*, nomStructure*/);
-    player = new Player(glm::vec3(-0.5f,10.0f,-0.5f), 1.8f, 0.6f, 6.0f, 1.5f); // Le joueur fait 1.8 bloc de haut, et 0.6 bloc de large et de long
+    terrainControler = new TerrainControler(3, 3, 5, 3, 1000, 4/*, nomStructure*/);
+    player = new Player(glm::vec3(-0.5f,(terrainControler->getPlaneHeight()+1)*32.0f,-0.5f), 1.8f, 0.6f, 6.0f, 1.5f); // Le joueur fait 1.8 bloc de haut, et 0.6 bloc de large et de long
     hitboxPlayer = player->getHitbox();
 
     Skybox *skybox = new Skybox();

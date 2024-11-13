@@ -13,6 +13,7 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
     this->posJoueur = player->getHitbox()->getRefToBottomPoint();
     this->planeWidth = terrainControler->getRefToPlaneWidth();
     this->planeLength = terrainControler->getRefToPlaneLength();
+    this->planeHeight = terrainControler->getRefToPlaneHeight();
     this->seedTerrain = terrainControler->getRefToSeedTerrain();
     this->octave = terrainControler->getRefToOctave();
     this->hitboxPlayer = player->getHitbox();
@@ -181,7 +182,12 @@ void ParamsWindow::draw(){
         ImGui::Spacing();
 
         if (ImGui::SliderInt("Largeur terrain", this->planeLength, 1, 22)){
-            this->mg->setHeightMap(*(this->planeLength));
+            this->mg->setLengthMap(*(this->planeLength));
+            this->modifTerrain();
+        }
+
+        if (ImGui::SliderInt("Hauteur terrain", this->planeHeight, 1, 22)){
+            this->mg->setHeightMap(*(this->planeHeight));
             this->modifTerrain();
         }
 

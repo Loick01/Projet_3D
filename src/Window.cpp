@@ -14,11 +14,24 @@ void Window::setup_GLFW() {
         exit(0);
     }
 
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    if (!monitor) {
+        std::cerr << "Impossible de trouver le moniteur principal" << std::endl;
+        glfwTerminate();
+    }
+
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    if (!mode) {
+        std::cerr << "Impossible de récupérer le mode vidéo du moniteur" << std::endl;
+        glfwTerminate();
+    }
+
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, this->contextMajor);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this->contextMinor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    this->window = glfwCreateWindow(this->width, this->height, this->title, NULL, NULL);
+    glfwCreateWindow(mode->width, mode->height, "Application OpenGL en plein écran", monitor, nullptr);
+    this->window = glfwCreateWindow(mode->width, mode->height, "Minecraft 2", monitor, nullptr);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << "\n";
         glfwTerminate();

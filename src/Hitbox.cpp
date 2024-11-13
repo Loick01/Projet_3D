@@ -25,7 +25,7 @@ Hitbox::Hitbox(glm::vec3 position, float heightHitbox, float widthHitbox, float 
 }
 
 Hitbox::~Hitbox(){
-    std::cout << "Destructeur de Hitbox\n";
+    // std::cout << "Destructeur de Hitbox\n";
 }
 
 glm::vec3 Hitbox::getBottomPoint(){

@@ -10,6 +10,7 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     this->accumulateurDestructionBlock = 0.0f;
     this->mouseLeftClickHold = false;
     this->previousIdInChunk = -2; // Attention à ne surtout pas initialiser avec -1 (sinon on tentera de casser un bloc hors liste de voxel)
+    this->noiseGenerator.SetSeed(seedTerrain);
 
     /*
     // Chargement des structures
@@ -28,9 +29,9 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
 
     this->mg = new MapGenerator(this->planeWidth, this->planeLength, this->seedTerrain, this->octave); 
     this->mg->generateImage();
-    int widthHeightmap, heightHeightmap, channels;
-    unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &heightHeightmap, &channels, 4);
-    this->buildPlanChunks(dataPixels, widthHeightmap, heightHeightmap);
+    int widthHeightmap, lengthHeightMap, channels;
+    unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightMap, &channels, 4);
+    this->buildPlanChunks(dataPixels, widthHeightmap, lengthHeightMap);
     stbi_image_free(dataPixels);
 }
 
@@ -56,7 +57,7 @@ std::vector<Chunk*> TerrainControler::getListeChunks(){
     return this->listeChunks;
 }
 
-void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap){
+void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap){
     for (int i = 0 ; i < this->listeChunks.size() ; i++){
         delete this->listeChunks[i];
     }
@@ -64,7 +65,8 @@ void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeigh
     for (int i = 0 ; i < this->planeWidth ; i++){
         for (int j = 0 ; j < this->planeLength ; j++){
             for (int k = 0 ; k < this->planeHeight ; k++){
-                Chunk *c = new Chunk(glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32,(this->planeHeight*32)/2*(-1.f) + k*32,(this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, heightHeightmap, i*32,j*32*this->planeWidth*32, seedTerrain); 
+                bool extreme = (i*j*k == 0) || (j == this->planeLength-1) || (i == this->planeWidth-1);
+                Chunk *c = new Chunk(i, j, k, this->noiseGenerator, extreme, k == this->planeHeight-1, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32,(this->planeHeight*32)/2*(-1.f) + k*32,(this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain); 
                 c->loadChunk();
                 this->listeChunks.push_back(c);
             }
@@ -95,6 +97,9 @@ int* TerrainControler::getRefToPlaneLength(){
 }
 int TerrainControler::getPlaneHeight(){
     return this->planeHeight;
+}
+int* TerrainControler::getRefToPlaneHeight(){
+    return &(this->planeHeight);
 }
 int* TerrainControler::getRefToSeedTerrain(){
     return &(this->seedTerrain);
