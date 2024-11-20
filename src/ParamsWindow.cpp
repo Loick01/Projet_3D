@@ -25,6 +25,8 @@ ParamsWindow::~ParamsWindow(){
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    ImPlot::DestroyContext();
     // Les champs qui sont dans cette classe sont en grande partie des pointeurs vers des champs
     // d'autres classes, ils seront supprimés dans leurs classes respectives
     // Il n'y a donc rien d'autre à delete ici
@@ -46,6 +48,8 @@ void ParamsWindow::init(GLFWwindow* window){
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+
+    ImPlot::CreateContext();
 }
 
 bool ParamsWindow::getInEditor(){
@@ -218,6 +222,47 @@ void ParamsWindow::draw(){
         }
         */
     }
+
+    ImGui::Spacing();
+    
+    if (ImPlot::BeginPlot("Continentalness")) {
+            ImPlot::SetupAxis(ImAxis_X1, "Perlin values", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
+            ImPlot::SetupAxis(ImAxis_Y1, "Continentalness", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
+
+            if (!this->perlin_values.empty() && !this->continentalness_values.empty()) {
+                ImPlot::PlotScatter("Points", this->perlin_values.data(), this->continentalness_values.data(), this->perlin_values.size());
+                ImPlot::PlotLine("Points", this->perlin_values.data(), this->continentalness_values.data(), this->perlin_values.size());
+            }
+            if (ImPlot::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
+                double perlin_value = mouse_pos.x;
+                double continent_value = mouse_pos.y;
+                if (this->perlin_values.size() != 0){
+                    for (unsigned int i = 0 ; i < this->perlin_values.size() ; i++){
+                        if (this->perlin_values[i] > perlin_value){
+                            this->perlin_values.insert(this->perlin_values.begin()+i, perlin_value);
+                            this->continentalness_values.insert(this->continentalness_values.begin()+i, continent_value);
+                            break;
+                        }else if (i == this->perlin_values.size()-1){
+                            std::cout << "Ajout à la fin\n";
+                            this->perlin_values.push_back(perlin_value);
+                            this->continentalness_values.push_back(continent_value);
+                            break;
+                        }
+                    }
+                }else{
+                    this->perlin_values.push_back(perlin_value);
+                    this->continentalness_values.push_back(continent_value);
+                }
+            }
+
+        ImPlot::EndPlot();
+    }
+
+    if (ImGui::Button("Reset Continentalness")){
+            this->perlin_values.clear();
+            this->continentalness_values.clear();
+        }
 
     ImGui::End();
 
