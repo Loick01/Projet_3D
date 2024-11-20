@@ -39,6 +39,8 @@ class Chunk{
         GLuint shaderstoragebuffer;
         // static std::vector<std::vector<Structure>> structures;
         int ID;
+
+        void addIndices(int* compteur);
     public:
         Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool topChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed);
         Chunk(glm::vec3 position); // Ce deuxième constructeur est utilisé uniquement pour construire le terrain en mode éditeur

@@ -39,7 +39,7 @@ float shadows[24] = float[24](
 void main(){
         mat4 mvp = Projection * View * Model;
         gl_Position = mvp * vec4(aPos,1);
-        int objectID = dataID[gl_VertexID/24];
+        int objectID = dataID[gl_VertexID/4];
         if (objectID == 13 || objectID == 29 || objectID == 34){ // Pour avoir des textures différentes sur les faces d'un même bloc (bloc d'herbe, bloc de bûche, bloc de cactus)
                 objectID = min(objectID + (gl_VertexID % 24)/4,objectID+2);
         }

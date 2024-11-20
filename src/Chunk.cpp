@@ -21,6 +21,7 @@ Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool t
             this->buildProceduralChunk(dataPixels, widthHeightmap, lengthHeightMap, posWidthChunk, posLengthChunk, seed);
         }else{
             this->buildCheeseChunk(i, j, k, noiseGenerator, extreme);
+            //this->buildFullChunk();
         }
     }
 }
@@ -84,7 +85,7 @@ void Chunk::buildCheeseChunk(int a, int b, int c, FastNoise noiseGenerator, bool
                     int typeBlock = rand() % 500;
                     int sizeVein = rand() % 3;
                     Voxel *vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),(typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
-                    vox->setVisible(true);
+                    //vox->setVisible(true);
 
                     /*
                     if (extreme){
@@ -346,17 +347,28 @@ void Chunk::buildStructure(int i, int j, int k){
     }
 }
 */
+void Chunk::addIndices(int* compteur){
+    int decalage = ((*compteur)++)*4; // 4 sommets par face
+    this->indices.push_back(decalage + 2);
+    this->indices.push_back(decalage + 0);
+    this->indices.push_back(decalage + 3);
+    this->indices.push_back(decalage + 3);
+    this->indices.push_back(decalage + 0);
+    this->indices.push_back(decalage + 1);
+}
 
 void Chunk::loadChunk(){
     // Très important de vider les vectors, sinon quand on modifie un chunk on ne voit aucune différence
     this->vertices.clear();
     this->indices.clear(); 
 
-    int compteur = 0; // Nombre de voxel déjà chargé, pour savoir où en est le décalage des indices
+    // int compteur = 0; // Nombre de voxel déjà chargé, pour savoir où en est le décalage des indices
+    int compteur = 0; // Nombre de face déjà chargé, pour savoir où en est le décalage des indices
     std::vector<int> objectIDs;
 
     for (int i = 0 ; i < this->listeVoxels.size() ; i++){
         if (listeVoxels[i] != nullptr){
+            /*
             if (listeVoxels[i]->getVisible()){
                 listeVoxels[i]->setIdInChunk(compteur); // Les voxels auront besoin d'avoir connaissance de leurs positions dans les buffers (c'est pour l'animation de la destruction d'un bloc)
                 std::vector<glm::vec3> verticesVoxel = listeVoxels[i]->getVertices();
@@ -375,6 +387,55 @@ void Chunk::loadChunk(){
 
                 objectIDs.push_back(listeVoxels[i]->getID());
             }
+            */
+
+            std::vector<glm::vec3> voxel_vertices = listeVoxels[i]->getVertices();
+            int voxel_id = listeVoxels[i]->getID();
+
+            // Face inférieur
+            if (i >= CHUNK_SIZE*CHUNK_SIZE && listeVoxels[i-CHUNK_SIZE*CHUNK_SIZE] == nullptr){
+                addIndices(&compteur);
+                objectIDs.push_back(voxel_id);
+                std::vector<glm::vec3> face_vertices(voxel_vertices.begin(), voxel_vertices.begin()+4);
+                this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+            }
+            // Face supérieur
+            if (i/(CHUNK_SIZE*CHUNK_SIZE) != (CHUNK_SIZE-1) && listeVoxels[i+CHUNK_SIZE*CHUNK_SIZE] == nullptr){
+                addIndices(&compteur);
+                objectIDs.push_back(voxel_id);
+                std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+4, voxel_vertices.begin()+8);
+                this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+            }
+            // Face arrière
+            if (i%(CHUNK_SIZE*CHUNK_SIZE) >= CHUNK_SIZE && listeVoxels[i-CHUNK_SIZE] == nullptr){
+                addIndices(&compteur);
+                objectIDs.push_back(voxel_id);
+                std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+8, voxel_vertices.begin()+12);
+                this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+            }
+            // Face avant
+            if (i%(CHUNK_SIZE*CHUNK_SIZE) < CHUNK_SIZE*(CHUNK_SIZE-1) && listeVoxels[i+CHUNK_SIZE] == nullptr){
+                addIndices(&compteur);
+                objectIDs.push_back(voxel_id);
+                std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+12, voxel_vertices.begin()+16);
+                this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+            }
+            // Face gauche
+            if (i%CHUNK_SIZE != 0 && listeVoxels[i-1] == nullptr){
+                addIndices(&compteur);
+                objectIDs.push_back(voxel_id);
+                std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+16, voxel_vertices.begin()+20);
+                this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+            }
+            // Face droite
+            if (i%CHUNK_SIZE != (CHUNK_SIZE-1) && listeVoxels[i+1] == nullptr){
+                addIndices(&compteur);
+                objectIDs.push_back(voxel_id);
+                std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+20, voxel_vertices.begin()+24);
+                this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+            }
+
+
         }
     }
 
