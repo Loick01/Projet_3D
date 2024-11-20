@@ -65,6 +65,7 @@ void Hitbox::resetJumpForce(int amplitude){
 bool Hitbox::getLateralMovePossible(bool axisToCheck,float directionCheck, glm::vec3 camera_target, glm::vec3 camera_up, TerrainControler *terrainControler, glm::vec3 *cross_point){
     int planeWidth = terrainControler->getPlaneWidth();
     int planeLength = terrainControler->getPlaneLength();
+    int planeHeight = terrainControler->getPlaneHeight();
     std::vector<Chunk*> listeChunks = terrainControler->getListeChunks();
     
     std::vector<glm::vec3> points; // On crée les 3 points qui serviront à la détection de la collision
@@ -84,12 +85,12 @@ bool Hitbox::getLateralMovePossible(bool axisToCheck,float directionCheck, glm::
     bool canMove = true;
     for (int i = 0 ; i < 3 ; i++){ // On regarde si l'un des points cause une collision
         int NL = floor(points[i][0]) + 16*planeWidth;
-        int NH = floor(points[i][1]) + 16;
+        int NH = floor(points[i][1]);
         int NP = floor(points[i][2]) + 16*planeLength;
         // Il ne faut pas oublier de vérifier si ce point se trouve bien dans le chunk
-        if (!(NL < 0 || NL > (planeWidth*32)-1 || NP < 0 || NP > (planeLength*32)-1 || NH < 0 || NH > 31)){
-            int index = NH *1024 + (NP%32) * 32 + (NL%32); // Indice du voxel dans lequel on considère que le point se trouve
-            Voxel *v = listeChunks[(NL/32) * planeLength + NP/32]->getListeVoxels()[index];
+        if (!(NL < 0 || NL > (planeWidth*32)-1 || NP < 0 || NP > (planeLength*32)-1 || NH < 0 || NH > (planeHeight*32)-1)){
+            int index = (NH%32) *1024 + (NP%32) * 32 + (NL%32); // Indice du voxel dans lequel on considère que le point se trouve
+            Voxel *v = listeChunks[ (NL/32) * planeLength * planeHeight + (NP/32) * planeHeight + NH/32]->getListeVoxels()[index];
             if (v != nullptr){ // Il y a une collision qui est détectée
                 canMove = false;
                 break; // Inutile de regarder pour les autres points
@@ -112,11 +113,9 @@ float Hitbox::checkTopAndBottomCollision(bool hasUpdate, float deltaTime, Terrai
     int numLongueur = floor(pPlayer[0]) + 16*planeWidth;
     int numHauteur = floor(pPlayer[1]-0.001);
     int numProfondeur = floor(pPlayer[2]) + 16*planeLength;
-    std::cout << "Num hauteur = " << numHauteur << "\n";
     if (numHauteur < -25){
-        std::cout << "Num hauteur = " << numHauteur << "\n";
         return -1.0; // Ici on met une valeur spéciale pour identifier le moment où l'entité est tombé dans le vide
-    }else if (numLongueur < 0 || numLongueur > (planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (planeLength*32)-1 || numHauteur < 0 || numHauteur > 31){
+    }else if (numLongueur < 0 || numLongueur > (planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (planeLength*32)-1 || numHauteur < 0 || numHauteur > (planeHeight*32)-1){
         // C'est contre_intuitif, mais on ne peut pas juste vérifier si le joueur a déjà sauté.
         // On est obligé d'utiliser un nouveau booléen si on veut l'empêcher de sauter + ne pas le faire subir la gravité 2 fois
         if (!hasUpdate){
