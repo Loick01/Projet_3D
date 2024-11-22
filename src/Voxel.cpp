@@ -4,7 +4,6 @@ Voxel::Voxel(glm::vec3 position, int objectID){
     this->backBottomLeftCorner = position;
     this->buildVoxel();
     this->objectID = objectID;
-    this->isVisible = false;
 }
 
 Voxel::~Voxel(){
@@ -18,6 +17,8 @@ glm::vec3 Voxel::getBackBottomLeftCorner(){
 // Voxel de taille 1.0
 void Voxel::buildVoxel(){
     for (int i = 0 ; i < 6 ; i++){
+        Face f;
+        //f.orientation = i;
         for (int h = 0; h < 2 ; h++) {
             for (int w = 0; w < 2; w++) {
                 float x, y, z;
@@ -44,22 +45,22 @@ void Voxel::buildVoxel(){
                     y = this->backBottomLeftCorner[1] + (float)h;
                     z = this->backBottomLeftCorner[2] + (1-w); 
                 }
-                this->vertices.push_back(glm::vec3(x,y,z));
+                //this->vertices.push_back(glm::vec3(x,y,z));
+                f.vertices.push_back(glm::vec3(x,y,z));
             }
         }
+        this->faces.push_back(f);
     }
 }
 
 std::vector<glm::vec3> Voxel::getVertices(){
-    return this->vertices;
-}
-
-void Voxel::setVisible(bool isVisible){
-    this->isVisible = isVisible;
-}
-
-bool Voxel::getVisible(){
-    return this->isVisible;
+    std::vector<glm::vec3> res;
+    for (unsigned int i = 0 ; i < this->faces.size() ; i++){
+        for (unsigned int j = 0 ; j < 4 ; j++){
+            res.push_back(this->faces[i].vertices[j]);
+        }
+    }
+    return res;
 }
 
 void Voxel::setId(int new_id){

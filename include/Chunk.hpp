@@ -29,14 +29,19 @@ class Voxel; // Déclaration avancée (je ne comprends pas pourquoi on est oblig
 // Chunk de taille 32x32x32
 class Chunk{
     private:
+        unsigned int pos_i;
+        unsigned int pos_j;
+        unsigned int pos_k;
         glm::vec3 position;
         std::vector<Voxel*> listeVoxels;
         std::vector<unsigned int> indices;
         std::vector<glm::vec3> vertices;
         std::vector<int> objectIDs;
+        std::vector<int> faceIDs;
         GLuint vertexbuffer;
         GLuint elementbuffer;
         GLuint shaderstoragebuffer;
+        GLuint shaderstoragebuffer3;
         // static std::vector<std::vector<Structure>> structures;
         int ID;
 
@@ -51,7 +56,7 @@ class Chunk{
         void buildSinusChunk();
         void buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed);
         void buildEditorChunk();
-        void loadChunk();
+        void loadChunk(TerrainControler* tc = nullptr);
         void drawChunk();
         std::vector<Voxel*> getListeVoxels();
         void setListeVoxels(std::vector<Voxel*> newListeVoxels);

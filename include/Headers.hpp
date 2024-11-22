@@ -31,7 +31,6 @@
 #include <stb_image_write.h>
 #include <FastNoise.h>
 #include <Texture.h>
-#include <Chunk.hpp>
 #include <Skybox.hpp>
 #include <Hud.hpp>
 #include <MapGenerator.hpp>
@@ -39,6 +38,7 @@
 // #include <Entity.hpp>
 #include <Transform.hpp>
 #include <TerrainControler.hpp>
+#include <Chunk.hpp>
 #include <ParamsWindow.hpp>
 #include <Agent.hpp>
 #include <Sound.hpp>

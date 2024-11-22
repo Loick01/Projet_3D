@@ -19,6 +19,11 @@ layout(std430, binding = 0) buffer layoutObjectID
     int dataID[];
 };
 
+layout(std430, binding = 2) buffer layoutFaceID
+{
+    int faceID[];
+};
+
 // Atlas de 5x10 images
 vec2 texCoords[4] = vec2[4](
         vec2(0.0,0.098),
@@ -41,7 +46,7 @@ void main(){
         gl_Position = mvp * vec4(aPos,1);
         int objectID = dataID[gl_VertexID/4];
         if (objectID == 13 || objectID == 29 || objectID == 34){ // Pour avoir des textures différentes sur les faces d'un même bloc (bloc d'herbe, bloc de bûche, bloc de cactus)
-                objectID = min(objectID + (gl_VertexID % 24)/4,objectID+2);
+                objectID = min(objectID + faceID[gl_VertexID/4],objectID+2);
         }
         if (gl_VertexID/24 == indexBlockToBreak){
                 isCurrentlyBreaking = 1.0;
@@ -52,7 +57,8 @@ void main(){
         }else{
                 isCurrentlyBreaking = 0.0;
         }
-        shadow_value = shadows[gl_VertexID%24];
+        //shadow_value = shadows[gl_VertexID%24];
+        shadow_value = shadows[faceID[gl_VertexID/4]*4 + gl_VertexID%4];
         uv_coord = texCoords[gl_VertexID%4];
         uv_coord[0] += objectID%5*0.2003;
         uv_coord[1] += objectID/5*0.1003;

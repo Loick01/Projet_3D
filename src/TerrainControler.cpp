@@ -67,12 +67,19 @@ void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeigh
             for (int k = 0 ; k < this->planeHeight ; k++){
                 bool extreme = (i*j*k == 0) || (j == this->planeLength-1) || (i == this->planeWidth-1);
                 Chunk *c = new Chunk(i, j, k, this->noiseGenerator, extreme, k == this->planeHeight-1, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain); 
-                c->loadChunk();
                 this->listeChunks.push_back(c);
             }
         }
     }
     srand(time(NULL));
+
+    this->loadTerrain(); // On a besoin que tous les chunks soient générés avant de charger le terrain pour la première fois
+}
+
+void TerrainControler::loadTerrain(){
+    for (unsigned int i = 0 ; i < this->listeChunks.size() ; i++){
+        this->listeChunks[i]->loadChunk();
+    }
 }
 
 void TerrainControler::buildEditorChunk(){
@@ -111,19 +118,24 @@ int* TerrainControler::getRefToOctave(){
 LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position){
     glm::vec3 originPoint = camera_position;
     glm::vec3 direction = normalize(camera_target);
+
+    int planeWidth = this->getPlaneWidth();
+    int planeLength = this->getPlaneLength();
+    int planeHeight = this->getPlaneHeight();
+
     //for (int k = 1 ; k < RANGE+1 ; k++){ // Trouver une meilleure manière pour détecter le bloc à casser
     for (float k = 0.1 ; k < RANGE+1. ; k+=0.1){ // C'est mieux mais pas parfait
         glm::vec3 target = originPoint + (float)k*direction;
-        int numLongueur = floor(target[0]) + 16*this->planeWidth;
-        int numHauteur = floor(target[1]) + 16;
-        int numProfondeur = floor(target[2]) + 16*this->planeLength;
-        if (numLongueur < 0 || numLongueur > (this->planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (this->planeLength*32)-1 || numHauteur < 0 || numHauteur > 31){
+
+        int numLongueur = floor(target[0]) + 16*planeWidth;
+        int numHauteur = floor(target[1]);
+        int numProfondeur = floor(target[2]) + 16*planeLength;
+        if (numLongueur < 0 || numLongueur > (planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (planeLength*32)-1 || numHauteur < 0 || numHauteur > (planeHeight*32)-1){
             continue; // Attention à ne pas mettre return même si c'est tentant (par exemple si le joueur regarde vers le bas en étant au sommet d'un chunk)
         }else{
-            int indiceV = numHauteur *1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
-            int indiceChunk = (numLongueur/32) * this->planeLength + numProfondeur/32;
+            int indiceV = (numHauteur%32)*1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
+            int indiceChunk = (numLongueur/32) * planeLength * planeHeight + (numProfondeur/32) * planeHeight + numHauteur/32 ;
             std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
-
             if (listeVoxels[indiceV] == nullptr){
                 continue;
             }else if (listeVoxels[indiceV]->getID() != 5){ // Le bloc de bedrock est incassable (donc attention si on en place un)
@@ -136,10 +148,10 @@ LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::
 
 void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir testé (au minimum) si lb.indiceVoxel != -1 avant d'appeler cette fonction
     std::vector<Voxel*> listeVoxels = this->listeChunks[lb.indiceChunk]->getListeVoxels();
-
     delete listeVoxels[lb.indiceVoxel]; // Ne pas oublier de bien libérer la mémoire
     listeVoxels[lb.indiceVoxel] = nullptr;
 
+    /*
     // Rendre visible les 6 cubes adjacents (s'ils existent et s'ils ne sont pas déjà visible)
     // Il faudrait chercher une meilleure façon de faire ça
     for (int c = -1 ; c < 2 ; c+=2){
@@ -167,6 +179,7 @@ void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir
             }
         }
     }
+    */
 
     this->listeChunks[lb.indiceChunk]->setListeVoxels(listeVoxels);
     this->listeChunks[lb.indiceChunk]->loadChunk();
@@ -191,7 +204,6 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
         if (listeVoxels[indiceV] == nullptr){
             glm::vec3 posChunk = this->listeChunks[indiceChunk]->getPosition();
             Voxel* vox = new Voxel(glm::vec3(posChunk[0]+numLongueur%32,posChunk[1]+numHauteur,posChunk[2]+numProfondeur%32),typeBlock);
-            vox->setVisible(true);
             listeVoxels[indiceV] = vox;
 
             this->listeChunks[indiceChunk]->setListeVoxels(listeVoxels);
@@ -288,4 +300,13 @@ void TerrainControler::setAccumulation(float accumulation){
 
 MapGenerator* TerrainControler::getMapGenerator(){
     return this->mg;
+}
+
+Chunk* TerrainControler::getChunkAt(int pos_i, int pos_k, int pos_j){
+    if (pos_i < 0 || pos_k < 0 || pos_j < 0 || pos_i > this->planeWidth || pos_k > this->planeHeight || pos_j > this->planeLength){
+        std::cout << "Chunk hors limite : i = " << pos_i << ", j = " << pos_j << ", k = " << pos_k << "\n";
+        return nullptr;
+    }
+    return nullptr;
+    //return this->listeChunks[0];
 }

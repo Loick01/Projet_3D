@@ -56,4 +56,6 @@ class TerrainControler{
         void setPreviousIdInChunk(int previousIdInChunk);
         void setAccumulation(float accumulation);
         MapGenerator* getMapGenerator();
+        void loadTerrain();
+        Chunk* getChunkAt(int pos_i, int pos_k, int pos_j);
 };
