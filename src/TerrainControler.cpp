@@ -78,7 +78,7 @@ void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeigh
 
 void TerrainControler::loadTerrain(){
     for (unsigned int i = 0 ; i < this->listeChunks.size() ; i++){
-        this->listeChunks[i]->loadChunk();
+        this->listeChunks[i]->loadChunk(this);
     }
 }
 
@@ -182,7 +182,7 @@ void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir
     */
 
     this->listeChunks[lb.indiceChunk]->setListeVoxels(listeVoxels);
-    this->listeChunks[lb.indiceChunk]->loadChunk();
+    this->listeChunks[lb.indiceChunk]->loadChunk(this);
     //return;
 }
 
@@ -303,10 +303,9 @@ MapGenerator* TerrainControler::getMapGenerator(){
 }
 
 Chunk* TerrainControler::getChunkAt(int pos_i, int pos_k, int pos_j){
-    if (pos_i < 0 || pos_k < 0 || pos_j < 0 || pos_i > this->planeWidth || pos_k > this->planeHeight || pos_j > this->planeLength){
-        std::cout << "Chunk hors limite : i = " << pos_i << ", j = " << pos_j << ", k = " << pos_k << "\n";
+    if (pos_i < 0 || pos_k < 0 || pos_j < 0 || pos_i >= this->planeWidth || pos_k >= this->planeHeight || pos_j >= this->planeLength){
+        //std::cout << "Chunk hors limite : i = " << pos_i << ", j = " << pos_j << ", k = " << pos_k << "\n";
         return nullptr;
     }
-    return nullptr;
-    //return this->listeChunks[0];
+    return this->listeChunks[pos_i * (this->planeHeight * this->planeLength) + pos_j * this->planeHeight + pos_k];
 }
