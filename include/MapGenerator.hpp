@@ -2,6 +2,8 @@
 
 #include <Headers.hpp>
 
+class ParamsWindow;
+
 class MapGenerator{
     private:
         int widthMap; // Nombre de chunk en longueur du terrain
@@ -9,6 +11,11 @@ class MapGenerator{
         int heightMap;
         int seed;
         int octave;
+
+        std::vector<float> perlin_values;
+        std::vector<float> continentalness_values;
+        bool has_spline;
+
     public:
         MapGenerator(int wMap, int hMap, int seed, int octave);
         MapGenerator();
@@ -20,4 +27,7 @@ class MapGenerator{
         void setHeightMap(int heightMap);
         void setSeed(int seed);
         void setOctave(int octave);
+
+        void setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values);
+        float getContinentalnessByInterpolation(float p_value);
 };

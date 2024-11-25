@@ -19,12 +19,15 @@ class ParamsWindow{
         int *seedTerrain;
         int *octave;
         bool inEditor;
+        Player *player;
         Hitbox* hitboxPlayer; // Nécessaire pour désactiver les dégâts de chutes après un changement de terrain
         static char nameStructure[512]; // On met cet attribut en static pour que le texte saisi reste le même entre 2 frames
         bool clearEntity; // Va servir à régler le problème de segfault qui apparaît au moment où on change la taille du terrain
 
-        std::vector<double> perlin_values;
-        std::vector<double> continentalness_values;
+        float ContinentValue;
+
+        std::vector<float> perlin_values;
+        std::vector<float> continentalness_values;
     public:
         ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player);
         ~ParamsWindow();
@@ -36,4 +39,6 @@ class ParamsWindow{
         void attachNewTerrain(TerrainControler *terrainControler);
         bool getClearEntity();
         void resetClearEntity();
+        void resetContinentalnessPlot();
+        float getContinentalnessByInterpolation(float p_value);
 };

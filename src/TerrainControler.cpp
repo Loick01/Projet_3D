@@ -182,7 +182,9 @@ void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir
     */
 
     this->listeChunks[lb.indiceChunk]->setListeVoxels(listeVoxels);
+    
     this->listeChunks[lb.indiceChunk]->loadChunk(this);
+    //this->listeChunks[lb.indiceChunk]->sendVoxelMapToShader();
     //return;
 }
 

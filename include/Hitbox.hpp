@@ -32,4 +32,5 @@ class Hitbox{
         bool getLateralMovePossible(bool axisToCheck, float directionCheck, glm::vec3 camera_target, glm::vec3 camera_up, TerrainControler *terrainControler, glm::vec3 *cross_point);
         float checkTopAndBottomCollision(bool hasUpdate, float deltaTime, TerrainControler *terrainControler);
         void resetCanTakeDamage();
+        void setPosition(glm::vec3 position);
 };

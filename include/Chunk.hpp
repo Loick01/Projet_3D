@@ -62,6 +62,8 @@ class Chunk{
         void setListeVoxels(std::vector<Voxel*> newListeVoxels);
         glm::vec3 getPosition();
 
+        void sendVoxelMapToShader();
+
         /*
         // Pour la génération des structures
         static Structure readFile(std::ifstream &file);

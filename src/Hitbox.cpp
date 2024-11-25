@@ -48,6 +48,10 @@ void Hitbox::setCanJump(bool canJump){
     this->canJump = canJump;
 }
 
+void Hitbox::setPosition(glm::vec3 position){
+    this->bottomPoint = position;
+}
+
 void Hitbox::checkJump(bool *hasUpdate, float deltaTime){
     if (!this->getCanJump()){ // Le joueur est en train de sauter
         this->move(glm::vec3(0.0,this->forceJump*deltaTime,0.0));

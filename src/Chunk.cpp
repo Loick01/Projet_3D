@@ -508,11 +508,13 @@ void Chunk::loadChunk(TerrainControler* tc){
                     this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
                 }
             }
-
-
         }
     }
     
+    this->sendVoxelMapToShader();
+}
+
+void Chunk::sendVoxelMapToShader(){
     glGenBuffers(1, &(this->vertexbuffer));
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(glm::vec3), &(this->vertices[0]), GL_DYNAMIC_DRAW);

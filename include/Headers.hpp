@@ -24,12 +24,12 @@
 #include "../external/glm/gtc/type_ptr.hpp"
 
 #include <Window.hpp>
+#include <FastNoise.h>
 #include <Voxel.hpp>
 #include <Shader.hpp>
 #include <Player.hpp>
 #include <stb_image.h>
 #include <stb_image_write.h>
-#include <FastNoise.h>
 #include <Texture.h>
 #include <Skybox.hpp>
 #include <Hud.hpp>

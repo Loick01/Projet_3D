@@ -6,6 +6,7 @@ Player::Player(glm::vec3 position, float playerHeight, float playerWidth, float 
     this->hitbox = new Hitbox(position, playerHeight, playerWidth, 21.0f, 7.5f);
     this->playerSpeed = playerSpeed;
     this->coeffAcceleration = coeffAcceleration;
+    this->ng.SetSeed(1000);
 }
 
 Player::~Player(){
@@ -51,4 +52,9 @@ float Player::getCoeffAcceleration(){
 
 void Player::applyAcceleration(bool b){ // b = true si le joueur se met à sprinter, false s'il arrête
     this->playerSpeed *= (b?this->coeffAcceleration:1/this->coeffAcceleration);
+}
+
+float Player::getContinentalness(){
+    glm::vec3 pos = this->hitbox->getBottomPoint();
+    return this->ng.GetNoise(pos.x*2,pos.z*2);
 }
