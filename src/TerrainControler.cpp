@@ -30,7 +30,7 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     this->mg = new MapGenerator(this->planeWidth, this->planeLength, this->seedTerrain, this->octave); 
     this->mg->generateImage();
     int widthHeightmap, lengthHeightMap, channels;
-    unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightMap, &channels, 4);
+    unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightMap, &channels, 1);
     this->buildPlanChunks(dataPixels, widthHeightmap, lengthHeightMap);
     stbi_image_free(dataPixels);
 }
@@ -66,7 +66,7 @@ void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeigh
         for (int j = 0 ; j < this->planeLength ; j++){
             for (int k = 0 ; k < this->planeHeight ; k++){
                 bool extreme = (i*j*k == 0) || (j == this->planeLength-1) || (i == this->planeWidth-1);
-                Chunk *c = new Chunk(i, j, k, this->noiseGenerator, extreme, k == this->planeHeight-1, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain); 
+                Chunk *c = new Chunk(i, j, k, this->noiseGenerator, extreme, k == this->planeHeight-1, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain);
                 this->listeChunks.push_back(c);
             }
         }

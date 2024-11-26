@@ -15,7 +15,6 @@ class Player {
         float playerSpeed;
         float coeffAcceleration; // Valeur par laquelle la vitesse est multiplié lorsque le joueur sprinte
 
-        FastNoise ng;
     public:
         Player(glm::vec3 position, float playerHeight, float playerWidth, float playerSpeed, float coeffAcceleration);
         ~Player();
@@ -29,6 +28,4 @@ class Player {
         float getLife();
         Hitbox* getHitbox();
         void setHitbox(Hitbox *hitbox);
-
-        float getContinentalness();
 };

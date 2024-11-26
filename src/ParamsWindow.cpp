@@ -19,8 +19,8 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
     this->hitboxPlayer = player->getHitbox();
     this->init(window);
     this->useStyle();
-    this->player = player;
 
+    this->noiseGenerator.SetSeed(*(this->seedTerrain));
     this->resetContinentalnessPlot();
 }
 
@@ -71,9 +71,9 @@ void ParamsWindow::modifTerrain(){
 	this->clearEntity = true; // On fera disparaître les entités au moment où on change le terrain
     this->mg->setContinentalnessSpline(this->perlin_values, this->continentalness_values);
     this->mg->generateImage();
-    int widthHeightmap, heightHeightmap, channels;
-    unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &heightHeightmap, &channels, 4);
-    this->terrainControler->buildPlanChunks(dataPixels, widthHeightmap, heightHeightmap);
+    int widthHeightmap, lengthHeightmap, channels;
+    unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightmap, &channels, 1);
+    this->terrainControler->buildPlanChunks(dataPixels, widthHeightmap, lengthHeightmap);
     stbi_image_free(dataPixels);
     this->hitboxPlayer->setPosition(glm::vec3(-0.5f,(terrainControler->getPlaneHeight())*32.0f,-0.5f));
     this->hitboxPlayer->resetCanTakeDamage(); // Le joueur ne prends pas de dégâts de chute s'il tombe de trop haut au moment du changement de terrain
@@ -230,29 +230,23 @@ void ParamsWindow::draw(){
 
     ImGui::Spacing();
 
-    this->ContinentValue = this->getContinentalnessByInterpolation(this->player->getContinentalness());
+    this->ContinentValue = this->getContinentalnessByInterpolation(*this->posJoueur);
     ImGui::Text("Continentalness : %.2f", this->ContinentValue);
 
     ImGui::Spacing();
 
-    
     if (ImPlot::BeginPlot("Continentalness")) {
             ImPlot::SetupAxis(ImAxis_X1, "Perlin values", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
             ImPlot::SetupAxisLimits(ImAxis_X1, -1.0, 1.0);
             ImPlot::SetupAxis(ImAxis_Y1, "Continentalness", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
-            // ImPlot::SetupAxisLimits(ImAxis_Y1, -1.0, 1.0);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 31.0);
 
             if (!this->perlin_values.empty() && !this->continentalness_values.empty()) {
                 ImPlot::PlotScatter("Points", this->perlin_values.data(), this->continentalness_values.data(), this->perlin_values.size());
                 ImPlot::PlotLine("Points", this->perlin_values.data(), this->continentalness_values.data(), this->perlin_values.size());
 
                 ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-                float x = this->player->getContinentalness();
-                float y = this->ContinentValue;
-
-                ImPlot::PlotScatter("Player Continent", &x, &y, 1); // Pointeurs vers x et y
-
-                //ImPlot::PlotScatter("Player Continent", -0.5, &(this->ContinentValue), 1);
+                ImPlot::PlotScatter("Player Continent", &(this->perlinValue), &(this->ContinentValue), 1);
                 ImPlot::PopStyleColor();
             }
             if (ImPlot::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -285,10 +279,10 @@ void ParamsWindow::draw(){
     }
     ImGui::SetNextItemWidth(250.0f);
     ImGui::SameLine();
-    ImGui::SliderFloat("First Continentalness", &(this->continentalness_values[0]), 0.0, 1.0);
+    ImGui::SliderFloat("First Continentalness", &(this->continentalness_values[0]), 0.0, 31.0);
     ImGui::SetNextItemWidth(250.0f);
     ImGui::SameLine();
-    ImGui::SliderFloat("Last Continentalness", &(this->continentalness_values.back()), 0.0, 1.0);
+    ImGui::SliderFloat("Last Continentalness", &(this->continentalness_values.back()), 0.0, 31.0);
 
 
     ImGui::End();
@@ -299,20 +293,21 @@ void ParamsWindow::draw(){
 
 void ParamsWindow::resetContinentalnessPlot(){
     this->perlin_values = {-1.0, 1.0};
-    this->continentalness_values = {0.5, 0.5};
+    this->continentalness_values = {16.0, 16.0};
 }
 
-float ParamsWindow::getContinentalnessByInterpolation(float p_value){
+float ParamsWindow::getContinentalnessByInterpolation(glm::vec3 position){
+    this->perlinValue = this->noiseGenerator.GetNoise(position.x,position.z);
     float index_start, index_end;
     for (unsigned int i = 0 ; i < this->perlin_values.size()-1 ; i++){
-        if (p_value >= this->perlin_values[i] && p_value <= this->perlin_values[i+1]){
+        if (this->perlinValue >= this->perlin_values[i] && this->perlinValue <= this->perlin_values[i+1]){
             index_start = i;
             index_end = i+1;
             break;
         }
     }
 
-    return this->continentalness_values[index_start] + (p_value - this->perlin_values[index_start])*((this->continentalness_values[index_end]-this->continentalness_values[index_start])/(this->perlin_values[index_end]-this->perlin_values[index_start]));
+    return this->continentalness_values[index_start] + (this->perlinValue - this->perlin_values[index_start])*((this->continentalness_values[index_end]-this->continentalness_values[index_start])/(this->perlin_values[index_end]-this->perlin_values[index_start]));
 }
 
 void ParamsWindow::attachNewTerrain(TerrainControler *terrainControler){

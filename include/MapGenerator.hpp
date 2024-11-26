@@ -15,6 +15,7 @@ class MapGenerator{
         std::vector<float> perlin_values;
         std::vector<float> continentalness_values;
         bool has_spline;
+        FastNoise noiseGenerator;
 
     public:
         MapGenerator(int wMap, int hMap, int seed, int octave);
@@ -28,6 +29,7 @@ class MapGenerator{
         void setSeed(int seed);
         void setOctave(int octave);
 
+	float useContinentalnessSpline(float x, float y);
         void setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values);
         float getContinentalnessByInterpolation(float p_value);
 };

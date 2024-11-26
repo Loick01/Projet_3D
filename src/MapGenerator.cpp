@@ -1,20 +1,16 @@
 #include <MapGenerator.hpp>
 
 float MapGenerator::generatePerlinNoise(float x, float y){
-  if (!this->has_spline){
-    FastNoise noiseGenerator;
-    noiseGenerator.SetSeed(this->seed);
-    float somme = noiseGenerator.GetNoise(x,y);
-    for (int i = 1 ; i < this->octave ; i++){
-      somme += noiseGenerator.GetNoise(x*2*i,y*2*i);
-    }
-    return somme/this->octave;
-  }else{
-    FastNoise noiseGenerator;
-    noiseGenerator.SetSeed(this->seed);
-    float p_value = noiseGenerator.GetNoise(x,y);
-    return this->getContinentalnessByInterpolation(p_value);
+  float somme = this->noiseGenerator.GetNoise(x,y);
+  for (int i = 1 ; i < this->octave ; i++){
+    somme += this->noiseGenerator.GetNoise(x*2*i,y*2*i);
   }
+  return somme/this->octave;
+}
+
+float MapGenerator::useContinentalnessSpline(float x, float y){
+  float p_value = this->noiseGenerator.GetNoise(x,y);
+  return this->getContinentalnessByInterpolation(p_value);
 }
 
 MapGenerator::MapGenerator(int wMap, int hMap, int seed, int octave){
@@ -23,6 +19,7 @@ MapGenerator::MapGenerator(int wMap, int hMap, int seed, int octave){
   this->seed = seed;
   this->octave = octave;
   this->has_spline = false;
+  this->noiseGenerator.SetSeed(this->seed);
 }
 
 MapGenerator::MapGenerator(){
@@ -34,28 +31,26 @@ MapGenerator::~MapGenerator(){
 }
 
 void MapGenerator::generateImage(){
-    // A voir si on ne peut pas utiliser des images sur 3 canaux, voir en niveau de gris
-    int dataSize = this->widthMap*32*this->heightMap*32*4;
-    unsigned char* dataPixels=(unsigned char*)malloc(sizeof(unsigned char)*dataSize);
-    for (int i = 0 ; i < dataSize ; i++){
-        dataPixels[i] = 0;
-        if(((i+1)%4)==0){
-            dataPixels[i]=255;
-        }
-    }
 
-    int widthHeightmap=this->widthMap*32;
-    int heightHeightmap=this->heightMap*32;
-  
+  int widthHeightmap=this->widthMap*32;
+  int lengthHeightmap=this->heightMap*32;
 
-  for(int i=0;i<heightHeightmap;i++){
+  int dataSize = widthHeightmap*lengthHeightmap;
+  unsigned char* dataPixels=(unsigned char*)malloc(sizeof(unsigned char)*dataSize);
+
+  for(int i=0;i<lengthHeightmap;i++){
     for(int j=0;j<widthHeightmap;j++){
-      float value = ((generatePerlinNoise(i/3,j/3)+1)/2) * 31; // Revoir comment on interprète le résultat obtenu ici pour déterminer la hauteur du terrain
-      dataPixels[i*widthHeightmap*4+j*4] = value;
+      float value;
+      if (this->has_spline){
+        value = useContinentalnessSpline(i,j);
+      }else{
+        value = ((generatePerlinNoise(i/3,j/3)+1)/2) * 31; // Revoir comment on interprète le résultat obtenu ici pour déterminer la hauteur du terrain
+      }
+      dataPixels[i*widthHeightmap+j] = value;
     }
   }
 
-  stbi_write_png("../Textures/terrain.png", widthHeightmap, heightHeightmap,4,dataPixels, 4*widthHeightmap);
+  stbi_write_png("../Textures/terrain.png", widthHeightmap, lengthHeightmap, 1, dataPixels, widthHeightmap);
   free(dataPixels);
 }
 
@@ -73,6 +68,7 @@ void MapGenerator::setHeightMap(int heightMap){
 
 void MapGenerator::setSeed(int seed){
   this->seed = seed;
+  this->noiseGenerator.SetSeed(seed);
 }
 
 void MapGenerator::setOctave(int octave){

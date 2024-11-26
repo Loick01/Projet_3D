@@ -177,7 +177,7 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
     for (int k=0;k<CHUNK_SIZE;k++){
         for (int j=0;j<CHUNK_SIZE;j++){     
             for (int i=0;i<CHUNK_SIZE;i++){ 
-                int indInText = posLengthChunk*4 + posWidthChunk*4 + j*widthHeightmap*4 + i*4;
+                int indInText = posLengthChunk + posWidthChunk + j*widthHeightmap + i;
                 if (k <= ((int)dataPixels[indInText])){ 
                     int typeBlock = rand() % 500;
                     int sizeVein = rand() % 3;
@@ -201,6 +201,7 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
                     }
                     this->listeVoxels.push_back(vox);
 
+                    /* A voir si on laisse la génération de minerais pour les chunks les plus haut (en fonction de ce qu'on décide pour les règles de génération)
                     // Génération des filons de minerais
                     int idToGenerate = listeVoxels[k*1024+32*j+i]->getID();
                     if((idToGenerate==DIAMOND_ORE || idToGenerate==IRON_ORE) && j>=sizeVein && i>=sizeVein && k>=sizeVein && j<CHUNK_SIZE){
@@ -218,6 +219,7 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
                             }
                         }
                     }
+                    */
                 }else{
                     this->listeVoxels.push_back(nullptr);
                 }
