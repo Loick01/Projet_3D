@@ -28,6 +28,7 @@ class ParamsWindow{
         float perlinValue;
         std::vector<float> perlin_values;
         std::vector<float> continentalness_values;
+        bool use_spline;
     public:
         ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player);
         ~ParamsWindow();

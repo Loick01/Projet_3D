@@ -1,13 +1,5 @@
 #include <MapGenerator.hpp>
 
-float MapGenerator::generatePerlinNoise(float x, float y){
-  float somme = this->noiseGenerator.GetNoise(x,y);
-  for (int i = 1 ; i < this->octave ; i++){
-    somme += this->noiseGenerator.GetNoise(x*2*i,y*2*i);
-  }
-  return somme/this->octave;
-}
-
 float MapGenerator::useContinentalnessSpline(float x, float y){
   float p_value = this->noiseGenerator.GetNoise(x,y);
   return this->getContinentalnessByInterpolation(p_value);
@@ -19,6 +11,9 @@ MapGenerator::MapGenerator(int wMap, int hMap, int seed, int octave){
   this->seed = seed;
   this->octave = octave;
   this->has_spline = false;
+  //enum NoiseType { Value, ValueFractal, Perlin, PerlinFractal, Simplex, SimplexFractal, Cellular, WhiteNoise, Cubic, CubicFractal };
+  this->noiseGenerator.SetNoiseType(FastNoise::SimplexFractal);
+  this->noiseGenerator.SetFractalOctaves(octave);
   this->noiseGenerator.SetSeed(this->seed);
 }
 
@@ -44,7 +39,7 @@ void MapGenerator::generateImage(){
       if (this->has_spline){
         value = useContinentalnessSpline(i,j);
       }else{
-        value = ((generatePerlinNoise(i/3,j/3)+1)/2) * 31; // Revoir comment on interprète le résultat obtenu ici pour déterminer la hauteur du terrain
+        value = ((this->noiseGenerator.GetNoise(i,j)+1)/2)*31;
       }
       dataPixels[i*widthHeightmap+j] = value;
     }
@@ -73,6 +68,7 @@ void MapGenerator::setSeed(int seed){
 
 void MapGenerator::setOctave(int octave){
   this->octave = octave;
+  this->noiseGenerator.SetFractalOctaves(octave);
 }
 
 void MapGenerator::setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values){
@@ -92,4 +88,8 @@ float MapGenerator::getContinentalnessByInterpolation(float p_value){
     }
 
     return this->continentalness_values[index_start] + (p_value - this->perlin_values[index_start])*((this->continentalness_values[index_end]-this->continentalness_values[index_start])/(this->perlin_values[index_end]-this->perlin_values[index_start]));
+}
+
+void MapGenerator::setHasSpline(bool has_spline){
+  this->has_spline = has_spline;
 }

@@ -21,13 +21,13 @@ class MapGenerator{
         MapGenerator(int wMap, int hMap, int seed, int octave);
         MapGenerator();
         ~MapGenerator();
-        float generatePerlinNoise(float x, float y);
         void generateImage();
         void setWidthMap(int widthMap);
         void setLengthMap(int lengthMap);
         void setHeightMap(int heightMap);
         void setSeed(int seed);
         void setOctave(int octave);
+        void setHasSpline(bool has_spline);
 
 	float useContinentalnessSpline(float x, float y);
         void setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values);

@@ -9,6 +9,7 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
     this->mg = terrainControler->getMapGenerator();
     this->inEditor = false;
     this->clearEntity = false;
+    this->use_spline = false;
     this->speedPlayer = player->getRefToSpeed();
     this->posJoueur = player->getHitbox()->getRefToBottomPoint();
     this->planeWidth = terrainControler->getRefToPlaneWidth();
@@ -69,7 +70,11 @@ void ParamsWindow::resetClearEntity(){
 
 void ParamsWindow::modifTerrain(){
 	this->clearEntity = true; // On fera disparaître les entités au moment où on change le terrain
-    this->mg->setContinentalnessSpline(this->perlin_values, this->continentalness_values);
+    if (this->use_spline){
+        this->mg->setContinentalnessSpline(this->perlin_values, this->continentalness_values);
+    }else{
+        this->mg->setHasSpline(false);
+    }
     this->mg->generateImage();
     int widthHeightmap, lengthHeightmap, channels;
     unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightmap, &channels, 1);
@@ -208,7 +213,7 @@ void ParamsWindow::draw(){
 
         ImGui::Spacing();
 
-        if(ImGui::SliderInt("Nombre d'octaves", this->octave, 1, 7)){
+        if(ImGui::SliderInt("Nombre d'octaves", this->octave, 1, 8)){
             this->mg->setOctave(*(this->octave));
         }
 
@@ -217,6 +222,8 @@ void ParamsWindow::draw(){
         if (ImGui::Button("Mettre à jour le terrain")){
             this->modifTerrain();
         }
+
+        ImGui::Checkbox("Utiliser la spline", &this->use_spline);
 
         ImGui::Spacing();
 
