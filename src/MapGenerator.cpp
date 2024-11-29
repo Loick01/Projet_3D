@@ -15,6 +15,7 @@ MapGenerator::MapGenerator(int wMap, int hMap, int seed, int octave){
   this->noiseGenerator.SetNoiseType(FastNoise::SimplexFractal);
   this->noiseGenerator.SetFractalOctaves(octave);
   this->noiseGenerator.SetSeed(this->seed);
+  this->nbChunkTerrain = 1;
 }
 
 MapGenerator::MapGenerator(){
@@ -26,7 +27,6 @@ MapGenerator::~MapGenerator(){
 }
 
 void MapGenerator::generateImage(){
-
   int widthHeightmap=this->widthMap*32;
   int lengthHeightmap=this->heightMap*32;
 
@@ -39,7 +39,7 @@ void MapGenerator::generateImage(){
       if (this->has_spline){
         value = useContinentalnessSpline(i,j);
       }else{
-        value = ((this->noiseGenerator.GetNoise(i,j)+1)/2)*31;
+        value = ((this->noiseGenerator.GetNoise(i,j)+1)/2)*(this->nbChunkTerrain*32 - 1);
       }
       dataPixels[i*widthHeightmap+j] = value;
     }
@@ -71,6 +71,10 @@ void MapGenerator::setOctave(int octave){
   this->noiseGenerator.SetFractalOctaves(octave);
 }
 
+void MapGenerator::setNbChunkTerrain(int nbChunkTerrain){
+  this->nbChunkTerrain = nbChunkTerrain;
+}
+
 void MapGenerator::setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values){
   this->perlin_values = perlin_values;
   this->continentalness_values = continentalness_values;
@@ -92,4 +96,8 @@ float MapGenerator::getContinentalnessByInterpolation(float p_value){
 
 void MapGenerator::setHasSpline(bool has_spline){
   this->has_spline = has_spline;
+}
+
+FastNoise MapGenerator::getNoiseGenerator(){
+  return this->noiseGenerator;
 }

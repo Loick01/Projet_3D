@@ -28,6 +28,12 @@ class MapGenerator{
         void setSeed(int seed);
         void setOctave(int octave);
         void setHasSpline(bool has_spline);
+        FastNoise getNoiseGenerator();
+
+        int nbChunkTerrain;
+
+        void setNbChunkTerrain(int nbChunkTerrain);
+
 
 	float useContinentalnessSpline(float x, float y);
         void setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values);

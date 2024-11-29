@@ -4,7 +4,7 @@
 
 // std::vector<std::vector<Structure>> Chunk::structures; // Permet d'éviter les erreurs de lien à la compilation
 
-Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool topChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed){
+Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool terrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain){
     this->pos_i = i;
     this->pos_j = j;
     this->pos_k = k;
@@ -20,8 +20,8 @@ Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool t
     }else if (typeChunk==2){
         this->buildFlatChunk();
     }else if (typeChunk==3){
-        if (topChunk){
-            this->buildProceduralChunk(dataPixels, widthHeightmap, lengthHeightMap, posWidthChunk, posLengthChunk, seed);
+        if (terrainChunk){
+            this->buildProceduralChunk(dataPixels, widthHeightmap, lengthHeightMap, posWidthChunk, posLengthChunk, seed, hauteurChunkTerrain);
         }else{
             this->buildCheeseChunk(i, j, k, noiseGenerator, extreme);
             //this->buildFullChunk();
@@ -81,7 +81,7 @@ void Chunk::buildCheeseChunk(int a, int b, int c, FastNoise noiseGenerator, bool
     for (int k=0;k<CHUNK_SIZE;k++){
         for (int j=0;j<CHUNK_SIZE;j++){     
             for (int i=0;i<CHUNK_SIZE;i++){ 
-                float density = noiseGenerator.GetSimplex((a*32 + i) * 6, (c*32 + k) * 6, (b*32 + j) * 6);
+                float density = noiseGenerator.GetNoise((a*32 + i) * 6, (c*32 + k) * 6, (b*32 + j) * 6);
                 if (density > 0){
                     int typeBlock = rand() % 500;
                     int sizeVein = rand() % 3;
@@ -168,7 +168,7 @@ void Chunk::buildSinusChunk(){
     }
 }
 
-void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed){
+void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain){
     this->listeVoxels.clear();
 
     srand(seed+posWidthChunk+posLengthChunk);
@@ -177,20 +177,21 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
     for (int k=0;k<CHUNK_SIZE;k++){
         for (int j=0;j<CHUNK_SIZE;j++){     
             for (int i=0;i<CHUNK_SIZE;i++){ 
+                int blockHeight = k + hauteurChunkTerrain*32;
                 int indInText = posLengthChunk + posWidthChunk + j*widthHeightmap + i;
-                if (k <= ((int)dataPixels[indInText])){ 
+                if (blockHeight <= ((int)dataPixels[indInText])){ 
                     int typeBlock = rand() % 500;
                     int sizeVein = rand() % 3;
                     Voxel *vox;
                     if(this->ID==0){
-                        vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),k>=(int)dataPixels[indInText]-(2+rand()%4) ? DIRT_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
+                        vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),blockHeight>=(int)dataPixels[indInText]-(2+rand()%4) ? DIRT_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
                     }else if(this->ID==1){
-                        vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),k>=(int)dataPixels[indInText]-(2+rand()%4) ? SAND_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
+                        vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),blockHeight>=(int)dataPixels[indInText]-(2+rand()%4) ? SAND_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
                     }else if(this->ID==2){
-                        vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),k>=(int)dataPixels[indInText]-(2+rand()%4) ? SNOW_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
+                        vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),blockHeight>=(int)dataPixels[indInText]-(2+rand()%4) ? SNOW_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
                     }
                     
-                    if (k==(int)dataPixels[indInText]){
+                    if (blockHeight==(int)dataPixels[indInText]){
                         if(this->ID==0){
                             vox->setId(GRASS_BLOCK);
                         }else if(this->ID==1){

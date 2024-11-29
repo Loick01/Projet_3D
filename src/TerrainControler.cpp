@@ -10,7 +10,6 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     this->accumulateurDestructionBlock = 0.0f;
     this->mouseLeftClickHold = false;
     this->previousIdInChunk = -2; // Attention à ne surtout pas initialiser avec -1 (sinon on tentera de casser un bloc hors liste de voxel)
-    this->noiseGenerator.SetSeed(seedTerrain);
 
     /*
     // Chargement des structures
@@ -31,8 +30,10 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     this->mg->generateImage();
     int widthHeightmap, lengthHeightMap, channels;
     unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightMap, &channels, 1);
+    this->nbChunkTerrain = 1;
     this->buildPlanChunks(dataPixels, widthHeightmap, lengthHeightMap);
     stbi_image_free(dataPixels);
+
 }
 
 // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
@@ -58,6 +59,8 @@ std::vector<Chunk*> TerrainControler::getListeChunks(){
 }
 
 void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap){
+    FastNoise ng = this->mg->getNoiseGenerator();
+    
     for (int i = 0 ; i < this->listeChunks.size() ; i++){
         delete this->listeChunks[i];
     }
@@ -66,7 +69,7 @@ void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeigh
         for (int j = 0 ; j < this->planeLength ; j++){
             for (int k = 0 ; k < this->planeHeight ; k++){
                 bool extreme = (i*j*k == 0) || (j == this->planeLength-1) || (i == this->planeWidth-1);
-                Chunk *c = new Chunk(i, j, k, this->noiseGenerator, extreme, k == this->planeHeight-1, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain);
+                Chunk *c = new Chunk(i, j, k, ng, extreme, k >= this->planeHeight-this->nbChunkTerrain, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain, this->nbChunkTerrain-(this->planeHeight-k));
                 this->listeChunks.push_back(c);
             }
         }
@@ -113,6 +116,9 @@ int* TerrainControler::getRefToSeedTerrain(){
 }
 int* TerrainControler::getRefToOctave(){
     return &(this->octave);
+}
+int* TerrainControler::getRefToNbChunkTerrain(){
+    return &(this->nbChunkTerrain);
 }
 
 LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position){

@@ -47,14 +47,14 @@ class Chunk{
 
         void addIndices(int* compteur);
     public:
-        Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool topChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed);
+        Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool terrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain);
         Chunk(glm::vec3 position); // Ce deuxième constructeur est utilisé uniquement pour construire le terrain en mode éditeur
         ~Chunk();
         void buildCheeseChunk(int a, int b, int c, FastNoise noiseGenerator, bool extreme);
         void buildFullChunk();
         void buildFlatChunk();
         void buildSinusChunk();
-        void buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed);
+        void buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain);
         void buildEditorChunk();
         void loadChunk(TerrainControler* tc = nullptr);
         void drawChunk();
