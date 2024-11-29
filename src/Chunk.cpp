@@ -169,7 +169,7 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
                     }
                 }else{
                     this->listeVoxels.push_back(nullptr);
-                }
+                } 
             }
         }
     }
@@ -216,6 +216,34 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
                     for(int k=dataPixels[indexVoxel]-1;k>dataPixels[indexBackNeighbour];k--){
                         listeVoxels[k*1024+32*j+i]->setVisible(true);
                     }
+                }
+            }
+        }
+    }
+
+    for (int k=0;k<CHUNK_SIZE;k++){
+        for (int j=0;j<CHUNK_SIZE;j++){     
+            for (int i=0;i<CHUNK_SIZE;i++){
+                if(listeVoxels[k*1024+32*j+i]!=nullptr){
+                    //lumière
+                    bool surface = true;
+                    //printf("indice = %d\n",k*1024+32*j+i);
+                    //printf("taille list = %d\n",listeVoxels.size());
+                    for(double y = 1.0;y<12.0-listeVoxels[k*1024+32*j+i]->getBackBottomLeftCorner().y;y+=1){
+                        if(listeVoxels[k*1024+32*j+i + y * 1024]!=nullptr){
+                            //printf("indice = %d\n",k*1024+32*j+i + y * 1024);
+                            //printf("taille list = %d\n",listeVoxels.size());
+                            surface=false;
+                        }
+                    }
+                    if(surface==true){
+
+                        //printf("il n'y a pas de bloc au dessus\n");
+                        listeVoxels[k*1024+32*j+i]->setLuminosity(16);
+                    }
+                    else{ 
+                        //printf("il y a un bloc au dessus\n"); à supprimer
+                    }   
                 }
             }
         }
@@ -287,6 +315,48 @@ void Chunk::loadChunk(){
 
     int compteur = 0; // Nombre de voxel déjà chargé, pour savoir où en est le décalage des indices
     std::vector<int> objectIDs;
+    std::vector<int> luminosityIDs;
+
+    for (int i = 0 ; i < this->listeVoxels.size() ; i++){
+        if (listeVoxels[i] != nullptr){
+            if(listeVoxels[i]->getID()==26 || listeVoxels[i]->getID()==8){
+                //printf("je suis un block lumineux\n");
+                int luminosityBlock = listeVoxels[i]->getLuminosity();
+                for(int m=-5;m<6;m++){
+                    for(int j=-5;j<6;j++){
+                        for(int k=-5;k<6;k++){
+                            int indiceV= i + k *1024 + j * 32 + m;
+                            int luminosityLevel = luminosityBlock-std::abs(m*2)-std::abs(j*2)-std::abs(k*2);
+                            // printf("indice du block lumineux = %d\n", i);
+                            // printf("indice V = %d\n", indiceV);
+                            if(listeVoxels[indiceV]!=nullptr && listeVoxels[indiceV]->getLuminosity()<luminosityLevel){
+                                if(i==k)luminosityLevel+=1;
+                                listeVoxels[indiceV]->setLuminosity(luminosityLevel);
+                            }
+                        }
+                    }
+                }
+            }
+            // bool surface = true
+            // for(double y = 1.0;y<14.0-listeVoxels[i]->getBackBottomLeftCorner().y;y+=1){
+            //     if(listeVoxels[i + y * 1024]!=nullptr){
+            //         printf("indice = %d\n",i + y * 1024);
+            //         surface=false;
+            //     }
+            // }
+            // if(surface==true){
+
+            //     printf("il n'y a pas de bloc au dessus\n");
+            //     listeVoxels[i]->setLuminosity(16);
+            // }
+            // else{ 
+            //     //printf("il y a un bloc au dessus\n"); à supprimer
+            // }
+        }
+        
+    }
+
+    
 
     for (int i = 0 ; i < this->listeVoxels.size() ; i++){
         if (listeVoxels[i] != nullptr){
@@ -307,11 +377,16 @@ void Chunk::loadChunk(){
                 compteur++;
 
                 objectIDs.push_back(listeVoxels[i]->getID());
+                luminosityIDs.push_back(listeVoxels[i]->getLuminosity());
             }
+            //actualisation lumière
+
+            
         }
     }
 
     this->objectIDs = objectIDs;
+    this->luminosityIDs = luminosityIDs;
     
     glGenBuffers(1, &(this->vertexbuffer));
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexbuffer);
@@ -325,10 +400,16 @@ void Chunk::loadChunk(){
 void Chunk::drawChunk(){
 
     // Pour les ID des blocs, on utilise des shaders storage buffers
-    glGenBuffers(1, &(this->shaderstoragebuffer));
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->shaderstoragebuffer);
+    glGenBuffers(1, &(this->shaderstoragebuffer1));
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->shaderstoragebuffer1);
     glBufferData(GL_SHADER_STORAGE_BUFFER, this->objectIDs.size()*sizeof(int), this->objectIDs.data(), GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->shaderstoragebuffer); // Attention : Dans le shader, binding doit valoir la même chose que le 2è paramètre
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->shaderstoragebuffer1); // Attention : Dans le shader, binding doit valoir la même chose que le 2è paramètre
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    glGenBuffers(1, &(this->shaderstoragebuffer2));
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->shaderstoragebuffer2);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, this->luminosityIDs.size()*sizeof(int), this->luminosityIDs.data(), GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, this->shaderstoragebuffer2); // Attention : Dans le shader, binding doit valoir la même chose que le 2è paramètre
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     
@@ -356,7 +437,8 @@ void Chunk::drawChunk(){
 
     glDisableVertexAttribArray(0);
 
-    glDeleteBuffers(1, &(this->shaderstoragebuffer)); // Attention à bien le supprimer, c'est ça qui causait la chute de FPS au bout d'un certain temps
+    glDeleteBuffers(1, &(this->shaderstoragebuffer1)); // Attention à bien le supprimer, c'est ça qui causait la chute de FPS au bout d'un certain temps
+    glDeleteBuffers(1, &(this->shaderstoragebuffer2));
 }
 
 std::vector<Voxel*> Chunk::getListeVoxels(){

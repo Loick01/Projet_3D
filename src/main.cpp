@@ -42,7 +42,7 @@ bool hasUpdate; // A rentrer dans la classe Hitbox plus tard
 bool isRunning = false;
 bool isHoldingShift = false;
 
-int blockInHotbar[9] = {0,1,2,3,4,5,6,7,8}; // Blocs qui sont dans la hotbar
+int blockInHotbar[9] = {0,1,2,26,4,5,6,7,8}; // Blocs qui sont dans la hotbar
 int indexHandBlock = 0;
 int handBlock = blockInHotbar[indexHandBlock]; // ID du block que le joueur est en train de poser (se modifie à la molette de la souris)
 

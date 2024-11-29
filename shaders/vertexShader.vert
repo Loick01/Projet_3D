@@ -8,15 +8,23 @@ out vec2 destruction_texture_coords;
 out float shadow_value;
 out float isCurrentlyBreaking;
 
+
+
 uniform mat4 Model;
 uniform mat4 View;
 uniform mat4 Projection;
 uniform int indexBlockToBreak;
 uniform int accumulateur_destruction;
+uniform int block_luminosity;
 
 layout(std430, binding = 0) buffer layoutObjectID
 {
     int dataID[];
+};
+
+layout(std430, binding = 1) buffer layoutLuminosityID
+{
+    int dataLuminosity[];
 };
 
 // Atlas de 5x10 images
@@ -52,6 +60,11 @@ void main(){
         }else{
                 isCurrentlyBreaking = 0.0;
         }
+	//changement luminosity
+	for(int i=0;i<24;i++){
+		shadows[i] = shadows[i]/16 * dataLuminosity[gl_VertexID/24];
+	}
+	//
         shadow_value = shadows[gl_VertexID%24];
         uv_coord = texCoords[gl_VertexID%4];
         uv_coord[0] += objectID%5*0.2003;

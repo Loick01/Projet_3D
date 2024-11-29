@@ -8,9 +8,11 @@ class Voxel {
         int objectID;
         bool isVisible;
         int idInChunk;
+        int luminosity;
     public:
         glm::vec3 backBottomLeftCorner;
         Voxel(glm::vec3 position, int objectID);
+        Voxel();
         ~Voxel();
         glm::vec3 getBackBottomLeftCorner();
         void buildVoxel();
@@ -19,6 +21,8 @@ class Voxel {
         bool getVisible();
         void setId(int new_id);
         int getID();
+        int getLuminosity();
+        void setLuminosity(int luminosity);
         void setIdInChunk(int idInChunk);
         int getIdInChunk();
 };

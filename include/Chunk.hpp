@@ -12,7 +12,8 @@
 #define STONE_BLOCK 0
 #define SNOW_BLOCK 16
 #define SAND_BLOCK 7
-
+#define GLASS_BLOCK 20
+#define PUMPKIN 26
 
 struct BlockStructure{
     int infoBlock[4];
@@ -34,9 +35,11 @@ class Chunk{
         std::vector<unsigned int> indices;
         std::vector<glm::vec3> vertices;
         std::vector<int> objectIDs;
+        std::vector<int> luminosityIDs;
         GLuint vertexbuffer;
         GLuint elementbuffer;
-        GLuint shaderstoragebuffer;
+        GLuint shaderstoragebuffer1;
+        GLuint shaderstoragebuffer2;
         // static std::vector<std::vector<Structure>> structures;
         int ID;
     public:

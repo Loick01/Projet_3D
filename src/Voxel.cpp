@@ -5,6 +5,14 @@ Voxel::Voxel(glm::vec3 position, int objectID){
     this->buildVoxel();
     this->objectID = objectID;
     this->isVisible = false;
+    if(objectID==26)this->luminosity = 16;
+    else this->luminosity = 3;
+    if(objectID==8)this->luminosity = 10;
+}
+
+Voxel::Voxel(){
+    this->objectID = -1;
+    this->luminosity = 0;
 }
 
 Voxel::~Voxel(){
@@ -68,6 +76,14 @@ void Voxel::setId(int new_id){
 
 int Voxel::getID(){
     return this->objectID;
+}
+
+int Voxel::getLuminosity(){
+    return this->luminosity;
+}
+
+void Voxel::setLuminosity(int luminosity){
+    this->luminosity = luminosity;
 }
 
 void Voxel::setIdInChunk(int idInChunk){
