@@ -166,85 +166,180 @@ LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::
     glm::vec3 direction = normalize(camera_target);
 
     //for (int k = 1 ; k < RANGE+1 ; k++){ // Trouver une meilleure manière pour détecter le bloc à casser
-    for (float k = 0.1 ; k < RANGE+1. ; k+=0.1){ // C'est mieux mais pas parfait
-        glm::vec3 target = originPoint + (float)k*direction;
-        int numLongueur = floor(target[0]) + 16*this->planeWidth;
-        int numHauteur = floor(target[1]) + 16;
-        int numProfondeur = floor(target[2]) + 16*this->planeLength;
-        int indiceChunk = (numLongueur/32) * this->planeLength + numProfondeur/32;
-        glm::vec3 posChunk = this->listeChunks[indiceChunk]->getPosition();
-        glm::vec3 posBlock = glm::vec3(posChunk[0]+numLongueur%32,posChunk[1]+numHauteur,posChunk[2]+numProfondeur%32);
-        if (numLongueur < 0 || numLongueur > (this->planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (this->planeLength*32)-1 || numHauteur < 0 || numHauteur > 31){
-            continue; // Attention à ne pas mettre return même si c'est tentant (par exemple si le joueur regarde vers le bas en étant au sommet d'un chunk)
-        }else{
-            int indiceV = numHauteur *1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
-            int indiceChunk = (numLongueur/32) * this->planeLength + numProfondeur/32;
-            std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
-
-            if (listeVoxels[indiceV] == nullptr){
-                continue;
-            }else if (listeVoxels[indiceV]->getID() != 5){ // Le bloc de bedrock est incassable (donc attention si on en place un)
-                
-                
-                // bloc qui émet de la lumière 
-                // if(listeVoxels[indiceV]->getID()==26 || listeVoxels[indiceV]->getID()==8 ){ // pour l'instant on ne test que avec la pumpkin
-                //     for(int i=-5;i<6;i++){
-                //         for(int j=-5;j<6;j++){
-                //             for(int k=-5;k<6;k++){
-                //                 int indiceB = (numHauteur+k) *1024 + (numProfondeur%32+i) * 32 + (numLongueur%32+j); 
-                //                 if(numHauteur+k<=31 && numHauteur+k>=0 && (numLongueur%32)+j<=31 && (numLongueur%32)+j>=0 && (numProfondeur%32)+i<=31 && (numProfondeur%32)+i>=0){ 
-                //                         printf("indice B = %d\n",indiceV);
-                //                         printf(" i = %d, j = %d, k = %d\n",i,j,k);
-                                        
-                //                 }
-                //                 if(listeVoxels[indiceB]!=nullptr){
-                                    
-                //                     listeVoxels[indiceB]->setLuminosity(3);
-                //                     if(listeVoxels[indiceB]->getID()==26){
-                //                             listeVoxels[indiceB]->setLuminosity(16);
-                //                     }
-                //                 }
-                //             }
-                //         }
-                //     }
-                // }
-
-                bool surface = true;
-                int hauteurBlocDessous = -1000;
-
-                for(double y2 = 1.0; y2<17.0+listeVoxels[indiceV]->getBackBottomLeftCorner().y; y2+=1 ){
-                        if(listeVoxels[indiceV - y2 * 1024]!=nullptr){
-                            hauteurBlocDessous=y2;
-                            break;
-                        }
-                    }
-
-                for(double y = 1.0;y<12.0-listeVoxels[indiceV]->getBackBottomLeftCorner().y;y+=1){
-                    if(listeVoxels[indiceV + y * 1024]!=nullptr){
-                        surface=false;
-                    }
-                }
-                if(surface==true){ // il y'a un block au dessus
-                    listeVoxels[indiceV - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(16);
-                }else{ 
+    //for (float k = 0.1 ; k < RANGE+1. ; k+=0.1){ // C'est mieux mais pas parfait
+        //glm::vec3 target = originPoint + (float)k*direction;
+        // int numLongueur = floor(target[0]) + 16*this->planeWidth;
+        // int numHauteur = floor(target[1]) + 16;
+        // int numProfondeur = floor(target[2]) + 16*this->planeLength;
+        // int indiceChunk = (numLongueur/32) * this->planeLength + numProfondeur/32;
         
-                } 
-                for(int i=-3;i<4;i++){
-                    for(int j=-3;j<4;j++){
-                        int idBlocAdjacent = (numHauteur+k) *1024 + (numProfondeur%32+i) * 32 + (numLongueur%32+j);
-                        
-                        //listeVoxels[indiceV - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(3);
-                        if(listeVoxels[indiceV - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i]!=nullptr && (indiceV - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i)>0 ){
-                            if(surface==true && i!=0 && j!=0)updateLight(listeVoxels,indiceV - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i,posBlock + glm::vec3(i,0,j));
-                            if(surface==false)updateLight(listeVoxels,indiceV - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i,posBlock + glm::vec3(i,0,j));
-                        }
-                    }
-                }
-                    
-                return {indiceV, indiceChunk, numLongueur, numProfondeur, numHauteur, listeVoxels[indiceV]->getIdInChunk()};
-            }
+        // if (numLongueur < 0 || numLongueur > (this->planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (this->planeLength*32)-1 || numHauteur < 0 || numHauteur > 31){
+        //     continue; // Attention à ne pas mettre return même si c'est tentant (par exemple si le joueur regarde vers le bas en étant au sommet d'un chunk)
+        // }else{
+    int step_x,step_y,step_z;
+    if(direction.x > 0) step_x = 0; else step_x =-1;
+    if(direction.y > 0) step_y = 0; else step_y =-1;
+    if(direction.z > 0) step_z = 0; else step_z =-1;
+
+    int numLongueur = floor(originPoint[0]) + 16*this->planeWidth;
+    int numHauteur = floor(originPoint[1]) + 16;
+    int numProfondeur = floor(originPoint[2]) + 16*this->planeLength;
+    // int indiceV = numHauteur *1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
+    // int indiceChunk = (numLongueur/32) * this->planeLength + numProfondeur/32;
+    // std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
+
+    int indiceVise;
+    int indiceChunkVise;
+    std::vector<Voxel*> listeVoxelsVise;
+
+
+    glm::vec3 posChunk;
+    glm::vec3 posBlock;
+
+    float t_max_x;
+    float t_delta_x;
+
+    float t_max_y;
+    float t_delta_y;
+
+    float t_max_z;
+    float t_delta_z;
+
+    float vx = direction.x;
+    float vy = direction.y;
+    float vz = direction.z;
+
+    int taille_cellule = 1;
+
+    if(vx!=0){
+        t_max_x = ((numLongueur + (step_x > 0)) * taille_cellule - originPoint.x) / vx;
+        t_delta_x = std::abs(taille_cellule / vx);
+    }else{
+        t_max_x = float('inf');
+        t_delta_x = float('inf');
+    }
+
+    if(vy!=0){
+        t_max_y = ((numHauteur + (step_y > 0)) * taille_cellule - originPoint.y) / vy;
+        t_delta_y = std::abs(taille_cellule / vy);
+    }else{
+        t_max_y = float('inf');
+        t_delta_y = float('inf');
+    }
+
+    if(vz!=0){
+        t_max_z = ((numProfondeur+ (step_z > 0)) * taille_cellule - originPoint.z) / vz;
+        t_delta_z = std::abs(taille_cellule / vz);
+    }else{
+        t_max_z = float('inf');
+        t_delta_z = float('inf');
+    }
+
+    float distance_parcourue = 0.0f;
+
+    float t_avance = 0.0f;
+
+    bool blocTrouve = false;
+
+    while(distance_parcourue<3){
+        if(t_max_x< t_max_y && t_max_x< t_max_z){
+            t_avance = t_max_x;
+            t_max_x += t_delta_x;
+            numLongueur +=step_x;
+        }else if(t_max_y< t_max_x && t_max_y< t_max_z){
+            t_avance = t_max_y;
+            t_max_y += t_delta_y;
+            numHauteur +=step_y;
+        }else if(t_max_z< t_max_y && t_max_z< t_max_x){
+            t_avance = t_max_z;
+            t_max_z += t_delta_z;
+            numProfondeur +=step_z;
+        }
+
+        if(distance_parcourue <= 3){
+            indiceVise = numHauteur *1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
+            indiceChunkVise = (numLongueur/32) * this->planeLength + numProfondeur/32;
+            listeVoxelsVise = this->listeChunks[indiceChunkVise]->getListeVoxels();
+            glm::vec3 posChunk = this->listeChunks[indiceChunkVise]->getPosition();
+            glm::vec3 posBlock = glm::vec3(posChunk[0]+numLongueur%32,posChunk[1]+numHauteur,posChunk[2]+numProfondeur%32);
+        }
+
+        if(listeVoxelsVise[indiceVise]!=nullptr){
+            blocTrouve=true;
+            break;
         }
     }
+
+    distance_parcourue = t_avance;
+
+    
+
+    
+
+            
+
+ 
+    if(blocTrouve && listeVoxelsVise[indiceVise]->getID() != 5){ // Le bloc de bedrock est incassable (donc attention si on en place un)
+        
+        // bloc qui émet de la lumière 
+        // if(listeVoxels[indiceV]->getID()==26 || listeVoxels[indiceV]->getID()==8 ){ // pour l'instant on ne test que avec la pumpkin
+        //     for(int i=-5;i<6;i++){
+        //         for(int j=-5;j<6;j++){
+        //             for(int k=-5;k<6;k++){
+        //                 int indiceB = (numHauteur+k) *1024 + (numProfondeur%32+i) * 32 + (numLongueur%32+j); 
+        //                 if(numHauteur+k<=31 && numHauteur+k>=0 && (numLongueur%32)+j<=31 && (numLongueur%32)+j>=0 && (numProfondeur%32)+i<=31 && (numProfondeur%32)+i>=0){ 
+        //                         printf("indice B = %d\n",indiceV);
+        //                         printf(" i = %d, j = %d, k = %d\n",i,j,k);
+                                
+        //                 }
+        //                 if(listeVoxels[indiceB]!=nullptr){
+                            
+        //                     listeVoxels[indiceB]->setLuminosity(3);
+        //                     if(listeVoxels[indiceB]->getID()==26){
+        //                             listeVoxels[indiceB]->setLuminosity(16);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        bool surface = true;
+        int hauteurBlocDessous = -1000;
+
+        for(double y2 = 1.0; y2<17.0+listeVoxelsVise[indiceVise]->getBackBottomLeftCorner().y; y2+=1 ){
+                if(listeVoxelsVise[indiceVise - y2 * 1024]!=nullptr){
+                    hauteurBlocDessous=y2;
+                    break;
+                }
+            }
+
+        for(double y = 1.0;y<12.0-listeVoxelsVise[indiceVise]->getBackBottomLeftCorner().y;y+=1){
+            if(listeVoxelsVise[indiceVise + y * 1024]!=nullptr){
+                surface=false;
+            }
+        }
+        if(surface==true){ // il y'a un block au dessus
+            listeVoxelsVise[indiceVise - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(16);
+        }else{ 
+
+        } 
+        for(int i=-3;i<4;i++){
+            for(int j=-3;j<4;j++){
+                int idBlocAdjacent = (numProfondeur%32+i) * 32 + (numLongueur%32+j);
+                
+                //listeVoxels[indiceV - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(3);
+                if(listeVoxelsVise[indiceVise - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i]!=nullptr && (indiceVise - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i)>0 ){
+                    if(surface==true && i!=0 && j!=0)updateLight(listeVoxelsVise,indiceVise - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i,posBlock + glm::vec3(i,0,j));
+                    if(surface==false)updateLight(listeVoxelsVise,indiceVise - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i,posBlock + glm::vec3(i,0,j));
+                }
+            }
+        }
+            
+        return {indiceVise, indiceChunkVise, numLongueur, numProfondeur, numHauteur, listeVoxelsVise[indiceVise]->getIdInChunk()};
+    }
+        //}
+    //}
     return {-1,-1,-1,-1,-1,-1};
 }
 
