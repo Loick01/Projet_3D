@@ -1,13 +1,13 @@
 #include <MapGenerator.hpp>
 
 float MapGenerator::useContinentalnessSpline(float x, float y){
-  float p_value = this->noiseGenerator.GetNoise(x,y);
+  float p_value = this->noiseGenerator.GetNoise(x/6,y/6);
   return this->getContinentalnessByInterpolation(p_value);
 }
 
-MapGenerator::MapGenerator(int wMap, int hMap, int seed, int octave){
+MapGenerator::MapGenerator(int wMap, int lMap, int seed, int octave){
   this->widthMap = wMap;
-  this->heightMap = hMap;
+  this->lengthMap = lMap;
   this->seed = seed;
   this->octave = octave;
   this->has_spline = false;
@@ -28,7 +28,7 @@ MapGenerator::~MapGenerator(){
 
 void MapGenerator::generateImage(){
   int widthHeightmap=this->widthMap*32;
-  int lengthHeightmap=this->heightMap*32;
+  int lengthHeightmap=this->lengthMap*32;
 
   int dataSize = widthHeightmap*lengthHeightmap;
   unsigned char* dataPixels=(unsigned char*)malloc(sizeof(unsigned char)*dataSize);
