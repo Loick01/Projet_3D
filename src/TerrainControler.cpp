@@ -199,23 +199,29 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
     glm::vec3 direction = normalize(camera_target);
     float k = 3.0; // Pour l'instant le joueur ne peut poser un block qu'à cette distance
     glm::vec3 target = originPoint + (float)k*direction;
-    int numLongueur = floor(target[0]) + 16*this->planeWidth;
-    int numHauteur = floor(target[1]) + 16;
-    int numProfondeur = floor(target[2]) + 16*this->planeLength;
-    if (numLongueur < 0 || numLongueur > (this->planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (this->planeLength*32)-1 || numHauteur < 0 || numHauteur > 31){
+
+    int planeWidth = this->getPlaneWidth();
+    int planeLength = this->getPlaneLength();
+    int planeHeight = this->getPlaneHeight();
+
+    int numLongueur = floor(target[0]) + 16*planeWidth;
+    int numHauteur = floor(target[1]);
+    int numProfondeur = floor(target[2]) + 16*planeLength;
+
+    if (numLongueur < 0 || numLongueur > (planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (planeLength*32)-1 || numHauteur < 0 || numHauteur > (planeHeight*32)-1){
         return false;
     }else{
-        int indiceV = numHauteur *1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
-        int indiceChunk = (numLongueur/32) * this->planeLength + numProfondeur/32;
+        int indiceV = (numHauteur%32)*1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
+        int indiceChunk = (numLongueur/32) * planeLength * planeHeight + (numProfondeur/32) * planeHeight + numHauteur/32 ;
         std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
 
         if (listeVoxels[indiceV] == nullptr){
             glm::vec3 posChunk = this->listeChunks[indiceChunk]->getPosition();
-            Voxel* vox = new Voxel(glm::vec3(posChunk[0]+numLongueur%32,posChunk[1]+numHauteur,posChunk[2]+numProfondeur%32),typeBlock);
+            Voxel* vox = new Voxel(glm::vec3(posChunk[0]+numLongueur%32,posChunk[1]+numHauteur%32,posChunk[2]+numProfondeur%32),typeBlock);
             listeVoxels[indiceV] = vox;
 
             this->listeChunks[indiceChunk]->setListeVoxels(listeVoxels);
-            this->listeChunks[indiceChunk]->loadChunk();
+            this->listeChunks[indiceChunk]->loadChunk(this);
 
             return true;
         }
