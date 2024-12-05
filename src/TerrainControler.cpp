@@ -121,26 +121,40 @@ int* TerrainControler::getRefToNbChunkTerrain(){
     return &(this->nbChunkTerrain);
 }
 
-LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position){
-    glm::vec3 originPoint = camera_position;
-    glm::vec3 direction = normalize(camera_target);
 
+bool TerrainControler::computeTargetedBlock(glm::vec3 target, int& numLongueur, int& numHauteur, int& numProfondeur, int& indiceV, int& indiceChunk){
     int planeWidth = this->getPlaneWidth();
     int planeLength = this->getPlaneLength();
     int planeHeight = this->getPlaneHeight();
+
+    numLongueur = floor(target[0]) + 16*planeWidth;
+    numHauteur = floor(target[1]);
+    numProfondeur = floor(target[2]) + 16*planeLength;
+
+    if (numLongueur < 0 || numLongueur > (planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (planeLength*32)-1 || numHauteur < 0 || numHauteur > (planeHeight*32)-1){
+        return false; 
+    }else{
+        indiceV = (numHauteur%32)*1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
+        indiceChunk = (numLongueur/32) * planeLength * planeHeight + (numProfondeur/32) * planeHeight + numHauteur/32 ;
+        return true;
+    }
+}
+
+LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position){
+    glm::vec3 originPoint = camera_position;
+    glm::vec3 direction = normalize(camera_target);
 
     //for (int k = 1 ; k < RANGE+1 ; k++){ // Trouver une meilleure manière pour détecter le bloc à casser
     for (float k = 0.1 ; k < RANGE+1. ; k+=0.1){ // C'est mieux mais pas parfait
         glm::vec3 target = originPoint + (float)k*direction;
 
-        int numLongueur = floor(target[0]) + 16*planeWidth;
-        int numHauteur = floor(target[1]);
-        int numProfondeur = floor(target[2]) + 16*planeLength;
-        if (numLongueur < 0 || numLongueur > (planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (planeLength*32)-1 || numHauteur < 0 || numHauteur > (planeHeight*32)-1){
-            continue; // Attention à ne pas mettre return même si c'est tentant (par exemple si le joueur regarde vers le bas en étant au sommet d'un chunk)
+        int numLongueur, numHauteur, numProfondeur, indiceV, indiceChunk;
+        std::vector<Voxel*> listeVoxels;
+        bool blockIsTargeted = this->computeTargetedBlock(target,numLongueur,numHauteur,numProfondeur,indiceV,indiceChunk);
+
+        if (!blockIsTargeted){
+            continue;
         }else{
-            int indiceV = (numHauteur%32)*1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
-            int indiceChunk = (numLongueur/32) * planeLength * planeHeight + (numProfondeur/32) * planeHeight + numHauteur/32 ;
             std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
             if (listeVoxels[indiceV] == nullptr){
                 continue;
@@ -157,41 +171,8 @@ void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir
     delete listeVoxels[lb.indiceVoxel]; // Ne pas oublier de bien libérer la mémoire
     listeVoxels[lb.indiceVoxel] = nullptr;
 
-    /*
-    // Rendre visible les 6 cubes adjacents (s'ils existent et s'ils ne sont pas déjà visible)
-    // Il faudrait chercher une meilleure façon de faire ça
-    for (int c = -1 ; c < 2 ; c+=2){
-        int numLongueurVoisin = (lb.numLongueur%32) + c;
-        int numHauteurVoisin = lb.numHauteur + c;
-        int numProfondeurVoisin = (lb.numProfondeur%32) + c;
-        int indiceVoisin;
-
-        if (numLongueurVoisin >= 0 && numLongueurVoisin <= 31){
-            indiceVoisin = lb.numHauteur *1024 + (lb.numProfondeur%32) * 32 + numLongueurVoisin;
-            if (listeVoxels[indiceVoisin] != nullptr && !(listeVoxels[indiceVoisin]->getVisible())){ // On vérifie si le voxel n'est pas déjà visible (en vrai c'est pas obligatoire)
-                listeVoxels[indiceVoisin]->setVisible(true);
-            }
-        }
-        if (numHauteurVoisin >= 0 && numHauteurVoisin <= 31){
-            indiceVoisin = numHauteurVoisin *1024 + (lb.numProfondeur%32) * 32 + (lb.numLongueur%32);
-            if (listeVoxels[indiceVoisin] != nullptr && !(listeVoxels[indiceVoisin]->getVisible())){
-                listeVoxels[indiceVoisin]->setVisible(true);
-            }
-        }
-        if (numProfondeurVoisin >= 0 && numProfondeurVoisin <= 31){
-            indiceVoisin = lb.numHauteur *1024 + numProfondeurVoisin * 32 + (lb.numLongueur%32);
-            if (listeVoxels[indiceVoisin] != nullptr && !(listeVoxels[indiceVoisin]->getVisible())){
-                listeVoxels[indiceVoisin]->setVisible(true);
-            }
-        }
-    }
-    */
-
     this->listeChunks[lb.indiceChunk]->setListeVoxels(listeVoxels);
-    
     this->listeChunks[lb.indiceChunk]->loadChunk(this);
-    //this->listeChunks[lb.indiceChunk]->sendVoxelMapToShader();
-    //return;
 }
 
 bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock){
@@ -200,21 +181,14 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
     float k = 3.0; // Pour l'instant le joueur ne peut poser un block qu'à cette distance
     glm::vec3 target = originPoint + (float)k*direction;
 
-    int planeWidth = this->getPlaneWidth();
-    int planeLength = this->getPlaneLength();
-    int planeHeight = this->getPlaneHeight();
+    int numLongueur, numHauteur, numProfondeur, indiceV, indiceChunk;
+    std::vector<Voxel*> listeVoxels;
+    bool blockIsTargeted = this->computeTargetedBlock(target,numLongueur,numHauteur,numProfondeur,indiceV,indiceChunk);
 
-    int numLongueur = floor(target[0]) + 16*planeWidth;
-    int numHauteur = floor(target[1]);
-    int numProfondeur = floor(target[2]) + 16*planeLength;
-
-    if (numLongueur < 0 || numLongueur > (planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (planeLength*32)-1 || numHauteur < 0 || numHauteur > (planeHeight*32)-1){
+    if (!blockIsTargeted){
         return false;
     }else{
-        int indiceV = (numHauteur%32)*1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
-        int indiceChunk = (numLongueur/32) * planeLength * planeHeight + (numProfondeur/32) * planeHeight + numHauteur/32 ;
         std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
-
         if (listeVoxels[indiceV] == nullptr){
             glm::vec3 posChunk = this->listeChunks[indiceChunk]->getPosition();
             Voxel* vox = new Voxel(glm::vec3(posChunk[0]+numLongueur%32,posChunk[1]+numHauteur%32,posChunk[2]+numProfondeur%32),typeBlock);

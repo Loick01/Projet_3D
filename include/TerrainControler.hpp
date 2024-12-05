@@ -6,6 +6,7 @@
 
 class MapGenerator;
 class Chunk;
+class Voxel;
 
 struct LocalisationBlock {
     int indiceVoxel, indiceChunk, numLongueur, numProfondeur, numHauteur, idInChunk;
@@ -29,6 +30,8 @@ class TerrainControler{
         int previousIdInChunk; 
 
         int nbChunkTerrain; // Nombre de chunk en hauteur considéré comme appartenant à la surface (définit l'amplitude de hauteur du terrain)
+
+        bool computeTargetedBlock(glm::vec3 target, int& numLongueur, int& numHauteur, int& numProfondeur, int& indiceV, int& indiceChunk);
 
     public :
         TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave/*, std::vector<std::vector<std::string>> nomStructure*/);
