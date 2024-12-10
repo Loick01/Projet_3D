@@ -6,6 +6,8 @@
 // Variables partagées avec la fenêtre ImGui
 #include "variables.h"
 
+
+
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
 
@@ -47,6 +49,7 @@ int indexHandBlock = 0;
 int handBlock = blockInHotbar[indexHandBlock]; // ID du block que le joueur est en train de poser (se modifie à la molette de la souris)
 
 bool showHud = true;
+bool creatorMod = true;
 int isShadow = 1; // 1 si on utilise les ombres dans le shader, 0 sinon
 bool modeJeu = true; // true pour créatif, false pour survie
 bool playerDie;
@@ -63,6 +66,22 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
+    // pour le creator mode
+    if (key == GLFW_KEY_X && action == GLFW_PRESS){
+        if(creationDistance!=0)creationDistance -=1;
+    }
+    if (key == GLFW_KEY_C && action == GLFW_PRESS){
+        creationDistance +=1;
+    }
+    if (key == GLFW_KEY_V && action == GLFW_PRESS){
+        if(radius!=0)radius -=1;
+    }
+    if (key == GLFW_KEY_B && action == GLFW_PRESS){
+        
+        radius +=1;
+    }
+    //
+
     if (key == GLFW_KEY_F && action == GLFW_PRESS){
         isImGuiShow = !isImGuiShow;
     }
@@ -92,7 +111,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         handBlock = blockInHotbar[indexHandBlock];
         glUniform1iv(glGetUniformLocation(programID_HUD, "blockHotbar"), 9, blockInHotbar); // On envoie la nouvelle hotbar aux shaders
     }
-    if ((key == GLFW_KEY_KP_SUBTRACT || key == GLFW_KEY_B) && action == GLFW_PRESS){
+    if ((key == GLFW_KEY_KP_SUBTRACT || key == GLFW_KEY_L) && action == GLFW_PRESS){
         if (blockInHotbar[0]>0){
             for (int i = 0 ; i < 9 ; i++){
                 blockInHotbar[i] -= 1;
@@ -250,9 +269,20 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         terrainControler->setPreviousIdInChunk(-2);
         glUseProgram(programID);
         glUniform1i(glGetUniformLocation(programID, "indexBlockToBreak"), terrainControler->getPreviousIdInChunk());
+    }else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE){
+        terrainControler->setMouseRightClickHold(false);
     }else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS){
-        if (terrainControler->tryCreateBlock(camera_target, camera_position, handBlock)){
-            soundManager->playCreateSound();
+        terrainControler->setMouseRightClickHold(true);
+        if(!creatorMod){
+            if (terrainControler->tryCreateBlock(camera_target, camera_position, handBlock)){
+                soundManager->playCreateSound();
+            }
+            printf("mode normal\n");
+        }else{
+            // if (terrainControler->tryCreatorCreateBlock(camera_target, camera_position, handBlock)){
+            //     soundManager->playCreateSound();
+            // }
+            printf("mode createur\n");
         }
     }
 }
@@ -543,6 +573,10 @@ int main(){
             }
             */
 
+            if (terrainControler->checkHoldRightClick(camera_position, camera_target, deltaTime, modeJeu,handBlock, programID)){
+                soundManager->playCreateSound();
+            }
+            
             // Affichage de la skybox
             skybox->drawSkybox(Model, Projection, View);
 

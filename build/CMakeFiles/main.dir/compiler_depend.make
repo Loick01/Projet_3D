@@ -5609,7 +5609,8 @@ CMakeFiles/main.dir/src/TerrainControler.cpp.o: ../src/TerrainControler.cpp \
   ../include/variables.h \
   ../include/Agent.hpp \
   ../include/Sound.hpp \
-  ../include/miniaudio.h
+  ../include/miniaudio.h \
+  ../include/variables.h
 
 CMakeFiles/main.dir/src/Texture.cpp.o: ../src/Texture.cpp \
   /usr/include/stdc-predef.h \

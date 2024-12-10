@@ -227,23 +227,14 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
                 if(listeVoxels[k*1024+32*j+i]!=nullptr){
                     //lumière
                     bool surface = true;
-                    //printf("indice = %d\n",k*1024+32*j+i);
-                    //printf("taille list = %d\n",listeVoxels.size());
                     for(double y = 1.0;y<12.0-listeVoxels[k*1024+32*j+i]->getBackBottomLeftCorner().y;y+=1){
                         if(listeVoxels[k*1024+32*j+i + y * 1024]!=nullptr){
-                            //printf("indice = %d\n",k*1024+32*j+i + y * 1024);
-                            //printf("taille list = %d\n",listeVoxels.size());
                             surface=false;
                         }
                     }
                     if(surface==true){
-
-                        //printf("il n'y a pas de bloc au dessus\n");
                         listeVoxels[k*1024+32*j+i]->setLuminosity(16);
                     }
-                    else{ 
-                        //printf("il y a un bloc au dessus\n"); à supprimer
-                    }   
                 }
             }
         }

@@ -26,6 +26,7 @@ class TerrainControler{
         MapGenerator *mg;
         float accumulateurDestructionBlock;
         bool mouseLeftClickHold;
+        bool mouseRightClickHold;
         int previousIdInChunk; 
 
     public :
@@ -46,11 +47,15 @@ class TerrainControler{
         LocalisationBlock tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position);
         void breakBlock(LocalisationBlock lb);
         bool tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock);
+        bool tryCreatorCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock);
         void drawTerrain();
         //void saveStructure(std::string filePath);
         bool checkHoldLeftClick(glm::vec3 camera_position, glm::vec3 camera_target, float deltaTime, bool modeJeu, GLuint programID);
+        bool checkHoldRightClick(glm::vec3 camera_position, glm::vec3 camera_target, float deltaTime, bool modeJeu, int handBlock, GLuint programID);
         void setMouseLeftClickHold(bool mouseLeftClickHold);
         bool getMouseLeftClickHold();
+        void setMouseRightClickHold(bool mouseRightClickHold);
+        bool getMouseRightClickHold();
         int getPreviousIdInChunk();
         void setPreviousIdInChunk(int previousIdInChunk);
         void setAccumulation(float accumulation);

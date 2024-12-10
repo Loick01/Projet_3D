@@ -148,6 +148,32 @@ void ParamsWindow::draw(){
 
     ImGui::Spacing();
 
+    ImGui::Checkbox("Mode créateur", &creatorMod);
+
+    ImGui::Spacing();
+
+    if(creatorMod){
+        ImGui::SliderFloat("Distance creation block", &creationDistance, 1.0, 20.0,"%1.f");
+        ImGui::SliderFloat("radius", &radius, 1.0, 10.0,"%1.f");
+        if (ImGui::Checkbox("Pinceau", &brushTool)){
+            sphereTool = false;
+            cubeTool = false;
+        };
+        if (ImGui::Checkbox("Sphere", &sphereTool)){
+            brushTool = false;
+            cubeTool = false;
+        };
+        if (ImGui::Checkbox("Cube", &cubeTool)){
+            sphereTool = false;
+            brushTool = false;
+        };
+        ImGui::Checkbox("Gomme", &erasor);
+            
+    
+        ImGui::Spacing();
+    }
+
+
     ImGui::Checkbox("Mode de jeu (créatif/survie)", &modeJeu);
 
     ImGui::Spacing();

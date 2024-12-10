@@ -428,4 +428,5 @@ CMakeFiles/main.dir/src/TerrainControler.cpp.o: \
  /home/e20230010831/Bureau/Projet_3D/include/variables.h \
  /home/e20230010831/Bureau/Projet_3D/include/Agent.hpp \
  /home/e20230010831/Bureau/Projet_3D/include/Sound.hpp \
- /home/e20230010831/Bureau/Projet_3D/include/miniaudio.h
+ /home/e20230010831/Bureau/Projet_3D/include/miniaudio.h \
+ /home/e20230010831/Bureau/Projet_3D/include/variables.h
