@@ -24,6 +24,17 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
     this->resetContinentalnessPlot();
 
     this->nbChunkTerrain = terrainControler->getRefToNbChunkTerrain();
+
+    this->racineBiomeChart.isDivide = false;
+    this->racineBiomeChart.typeBiome = 0;
+    this->racineBiomeChart.cs.clear();
+    float t_x[4] = { 0.0f, 0.0f, 1.0f, 1.0f};
+    float t_y[4] = { 0.0f, 1.0f, 1.0f, 0.0f};
+    for (unsigned int i = 0 ; i < 4 ; i++){
+        this->racineBiomeChart.x_data[i] = t_x[i];
+        this->racineBiomeChart.y_data[i] = t_y[i];
+    }
+    this->racineBiomeChart.sizeCell = 1.0f;
 }
 
 ParamsWindow::~ParamsWindow(){
@@ -83,6 +94,30 @@ void ParamsWindow::modifTerrain(){
     stbi_image_free(dataPixels);
     this->hitboxPlayer->setPosition(glm::vec3(-0.5f,(terrainControler->getPlaneHeight())*32.0f,-0.5f));
     this->hitboxPlayer->resetCanTakeDamage(); // Le joueur ne prends pas de dégâts de chute s'il tombe de trop haut au moment du changement de terrain
+}
+
+void ParamsWindow::drawCellInChart(CelluleBiome cb){
+    ImPlot::PlotScatter("Points", cb.x_data, cb.y_data, 4);
+    ImPlot::PlotLine("Points", cb.x_data, cb.y_data, 4);
+
+    if (cb.isDivide){
+        for (unsigned int i = 0 ; i < 4 ; i++){
+            this->drawCellInChart(cb.cs[i]);
+        }
+    }
+}
+
+CelluleBiome* ParamsWindow::getSelectedCellBiome(CelluleBiome* currentCell, ImPlotPoint pos){
+    if (currentCell->isDivide){
+        for (unsigned int i = 0 ; i < currentCell->cs.size() ; i++){
+            // Vérifier l'intersection entre le clic de la souris et les enfants de la cellule courante
+            if (pos.x >= currentCell->cs[i].x_data[0] && pos.x <= currentCell->cs[i].x_data[2] && pos.y >= currentCell->cs[i].y_data[0] && pos.y <= currentCell->cs[i].y_data[1]){
+                return this->getSelectedCellBiome(&(currentCell->cs[i]), pos);
+            }
+        }
+    }else{
+        return currentCell;
+    }
 }
 
 void ParamsWindow::draw(){
@@ -257,6 +292,7 @@ void ParamsWindow::draw(){
                 ImPlot::PlotLine("Points", this->simplex_values.data(), this->continentalness_values.data(), this->simplex_values.size());
             }
             if (ImPlot::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                // Ajout d'un point
                 ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
                 float simplex_value = mouse_pos.x;
                 float continent_value = mouse_pos.y;
@@ -276,6 +312,25 @@ void ParamsWindow::draw(){
                     this->simplex_values.push_back(simplex_value);
                     this->continentalness_values.push_back(continent_value);
                 }
+            }else if (ImPlot::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)){
+                // Suppression d'un point (Pour l'instant, appuyer sur le clic droit ouvre aussi une fenetre dans ImPlot)
+                ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
+                float minDistance = FLT_MAX;
+                int indexToDelete = -1;
+                for (unsigned int i = 0 ; i < this->simplex_values.size() ; i++){
+                    float dx = this->simplex_values[i] - mouse_pos.x;
+                    float dy = this->continentalness_values[i] - mouse_pos.y;
+                    float distanceToPoint = dx*dx+dy*dy;
+                    if (distanceToPoint < minDistance){
+                        minDistance = distanceToPoint;
+                        indexToDelete = i;
+                    }
+                }
+                // On empeche la suppression du premier et du dernier point
+                if (indexToDelete != 0 && indexToDelete != this->simplex_values.size()-1 && minDistance < 0.1f){
+                    this->simplex_values.erase(this->simplex_values.begin() + indexToDelete);
+                    this->continentalness_values.erase(this->continentalness_values.begin() + indexToDelete);
+                }
             }
 
         ImPlot::EndPlot();
@@ -291,6 +346,47 @@ void ParamsWindow::draw(){
     ImGui::SameLine();
     ImGui::SliderFloat("Last Continentalness", &(this->continentalness_values.back()), 0.0, *(this->nbChunkTerrain)*32.0 - 1.0);
 
+    ImGui::Spacing();
+
+    ImGui::Spacing();
+
+    ImVec2 biome_chart_size(400, 400);
+
+    if (ImPlot::BeginPlot("Biome Chart", biome_chart_size, ImPlotFlags_NoMenus | ImPlotFlags_NoLegend)) {
+        ImPlot::SetupAxis(ImAxis_X1, "Précipitation", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0.0, 1.0);
+        ImPlot::SetupAxis(ImAxis_Y1, "Humidité", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 1.0);
+
+        this->drawCellInChart(this->racineBiomeChart); // Deessine récursivement toutes les cellules de la biome chart
+
+        if (ImPlot::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            // Division en 4 du biome sélectionné dans la chart
+            ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
+            CelluleBiome* tc = this->getSelectedCellBiome(&this->racineBiomeChart, mouse_pos);
+            tc->isDivide = true;
+            float midCell = tc->sizeCell/2.0f;
+            for (unsigned int i = 0 ; i < 2 ; i++){
+                for (unsigned int j = 0 ; j < 2 ; j++){
+                    CelluleBiome new_cell;
+                    new_cell.typeBiome = 0;
+                    new_cell.isDivide = false;
+                    for (unsigned int m = 0 ; m < 2 ; m++){
+                        for (unsigned int n = 0 ; n < 2 ; n++){
+                            new_cell.x_data[m*2+n] = tc->x_data[0] + i*midCell + m*midCell;
+                            new_cell.y_data[m*2+n] = tc->y_data[0] + j*midCell + (m==0?n:1-n)*midCell;
+                        }
+                    }
+                    new_cell.sizeCell = midCell;
+                    
+                    tc->cs.push_back(new_cell);
+                }
+            }
+        }
+
+        ImPlot::EndPlot();
+    }
+    
 
     ImGui::End();
 

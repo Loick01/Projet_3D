@@ -5,6 +5,16 @@
 // Temporaire (tant que ces variables n'ont pas été mise dans des classes)
 #include "variables.h"
 
+struct CelluleBiome{
+    bool isDivide;
+    int typeBiome;
+    float x_data[4];
+    float y_data[4];
+    float sizeCell;
+
+    std::vector<CelluleBiome> cs;
+};
+
 class ParamsWindow{
     private:
         int style; // 0 pour Dark, 1 pour Light, sinon Classic
@@ -27,7 +37,12 @@ class ParamsWindow{
         std::vector<float> continentalness_values;
         bool use_spline;
 
+        CelluleBiome racineBiomeChart;
+
         int *nbChunkTerrain;
+
+        void drawCellInChart(CelluleBiome cb);
+        CelluleBiome* getSelectedCellBiome(CelluleBiome* currentCell, ImPlotPoint pos);
     public:
         ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player);
         ~ParamsWindow();
