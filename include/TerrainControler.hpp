@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Headers.hpp>
+#include "variables.h"
 
 #define RANGE 4
 
@@ -32,7 +33,10 @@ class TerrainControler{
         int nbChunkTerrain; // Nombre de chunk en hauteur considéré comme appartenant à la surface (définit l'amplitude de hauteur du terrain)
 
         bool computeTargetedBlock(glm::vec3 target, int& numLongueur, int& numHauteur, int& numProfondeur, int& indiceV, int& indiceChunk);
-
+        CelluleBiome racineBiomeChart;
+        CelluleBiome getCellBiomeFromBlock(CelluleBiome currentCell, float precipitation, float humidite);
+        bool biomeChart;
+        
     public :
         TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave/*, std::vector<std::vector<std::string>> nomStructure*/);
         TerrainControler(); // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
@@ -63,4 +67,7 @@ class TerrainControler{
         MapGenerator* getMapGenerator();
         void loadTerrain();
         Chunk* getChunkAt(int pos_i, int pos_k, int pos_j);
+        int getBiomeID(float precipitation, float humidite);
+        void setBiomeChart(CelluleBiome racineBiomeChart);
+        bool hasBiomeChart();
 };

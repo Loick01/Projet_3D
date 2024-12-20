@@ -4,13 +4,13 @@
 
 // std::vector<std::vector<Structure>> Chunk::structures; // Permet d'éviter les erreurs de lien à la compilation
 
-Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool terrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain){
+Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool terrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc){
     this->pos_i = i;
     this->pos_j = j;
     this->pos_k = k;
     this->position = position;
     //this->ID=rand()%3;
-    this->ID=0;
+    // this->ID=0;
     if (typeChunk==0){
         this->buildFullChunk();
     }else if (typeChunk==1){
@@ -21,7 +21,7 @@ Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool t
         this->buildFlatChunk();
     }else if (typeChunk==3){
         if (terrainChunk){
-            this->buildProceduralChunk(dataPixels, widthHeightmap, lengthHeightMap, posWidthChunk, posLengthChunk, seed, hauteurChunkTerrain);
+            this->buildProceduralChunk(dataPixels, widthHeightmap, lengthHeightMap, posWidthChunk, posLengthChunk, seed, hauteurChunkTerrain, tc, noiseGenerator);
         }else{
             this->buildCheeseChunk(i, j, k, noiseGenerator, extreme);
             //this->buildFullChunk();
@@ -168,36 +168,49 @@ void Chunk::buildSinusChunk(){
     }
 }
 
-void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain){
+void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc, FastNoise noiseGenerator){
     this->listeVoxels.clear();
 
     srand(seed+posWidthChunk+posLengthChunk);
 
     // Génération du terrain
+    int biomeID = 0;
+    int posWidth = posWidthChunk;
+    // Attention à ne pas utiliser posLengthChunk directement, la valeur en paramètre est modifié pour correspondre au dimension de la heightmap (d'où le calcul ci-dessous)
+    int posLength = posLengthChunk/tc->getPlaneWidth()/32;
     for (int k=0;k<CHUNK_SIZE;k++){
         for (int j=0;j<CHUNK_SIZE;j++){     
             for (int i=0;i<CHUNK_SIZE;i++){ 
                 int blockHeight = k + hauteurChunkTerrain*32;
                 int indInText = posLengthChunk + posWidthChunk + j*widthHeightmap + i;
+                if (tc->hasBiomeChart()){
+                    // Utiliser i et j pour déterminer les valeurs de précipitation et d'humidité
+                    // Attention à ne pas avoir de corrélation entre ces 2 valeurs, d'où l'utilisation d'offset (ici 1000 pour x et 1500 pour z)
+                    // C'est ici qu'on peut faire varier la taille des biomes (peut être rendre ça modifiable via un slider ImGui)
+                    float precipitation = (noiseGenerator.GetNoise((posWidth + i), (posLength + j))+1.0)/2.0;
+                    float humidite = (noiseGenerator.GetNoise((posWidth + i + 1000), (posLength + j + 1500))+1.0)/2.0;
+                    biomeID = tc->getBiomeID(precipitation,humidite); // On utilise la position x et z du block pour déterminer le biome
+                }
                 if (blockHeight <= ((int)dataPixels[indInText])){ 
                     int typeBlock = rand() % 500;
                     int sizeVein = rand() % 3;
                     Voxel *vox;
-                    if(this->ID==0){
+                    if(biomeID==0){
                         vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),blockHeight>=(int)dataPixels[indInText]-(2+rand()%4) ? DIRT_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
-                    }else if(this->ID==1){
+                    }else if(biomeID==1){
                         vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),blockHeight>=(int)dataPixels[indInText]-(2+rand()%4) ? SAND_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
-                    }else if(this->ID==2){
+                    }else if(biomeID==2){
                         vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),blockHeight>=(int)dataPixels[indInText]-(2+rand()%4) ? SNOW_BLOCK : (typeBlock==0?DIAMOND_ORE:(typeBlock<10?IRON_ORE:STONE_BLOCK))); 
                     }
                     
                     if (blockHeight==(int)dataPixels[indInText]){
-                        if(this->ID==0){
+                        if(biomeID==0){
                             vox->setId(GRASS_BLOCK);
-                        }else if(this->ID==1){
+                        }else if(biomeID==1){
                             vox->setId(SAND_BLOCK);
-                        }else if(this->ID==2){
-                            vox->setId(SNOW_BLOCK);
+                        }else if(biomeID==2){
+                            //vox->setId(SNOW_BLOCK);
+                            vox->setId(STONE_BLOCK); // Pour mieux faire la différence avec les blocs de sable (biomeID == 1)
                         }
                     }
                     this->listeVoxels.push_back(vox);

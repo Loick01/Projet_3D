@@ -2,7 +2,7 @@
 
 #include <Headers.hpp>
 
-class ParamsWindow;
+// class ParamsWindow;
 
 class MapGenerator{
     private:

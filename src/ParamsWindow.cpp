@@ -26,7 +26,7 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
     this->nbChunkTerrain = terrainControler->getRefToNbChunkTerrain();
 
     this->racineBiomeChart.isDivide = false;
-    this->racineBiomeChart.typeBiome = 0;
+    this->racineBiomeChart.typeBiome = 2;
     this->racineBiomeChart.cs.clear();
     float t_x[4] = { 0.0f, 0.0f, 1.0f, 1.0f};
     float t_y[4] = { 0.0f, 1.0f, 1.0f, 0.0f};
@@ -35,6 +35,8 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
         this->racineBiomeChart.y_data[i] = t_y[i];
     }
     this->racineBiomeChart.sizeCell = 1.0f;
+
+    this->terrainControler->setBiomeChart(this->racineBiomeChart); // Biome Chart par défaut
 }
 
 ParamsWindow::~ParamsWindow(){
@@ -87,6 +89,7 @@ void ParamsWindow::modifTerrain(){
     }else{
         this->mg->setHasSpline(false);
     }
+    this->terrainControler->setBiomeChart(this->racineBiomeChart);
     this->mg->generateImage();
     int widthHeightmap, lengthHeightmap, channels;
     unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightmap, &channels, 1);
@@ -369,7 +372,7 @@ void ParamsWindow::draw(){
             for (unsigned int i = 0 ; i < 2 ; i++){
                 for (unsigned int j = 0 ; j < 2 ; j++){
                     CelluleBiome new_cell;
-                    new_cell.typeBiome = 0;
+                    new_cell.typeBiome = std::min((int)i*2+(int)j,2); // Plus tard on fera en sorte de contrôler le type des biomes via la fenêtre ImPlot
                     new_cell.isDivide = false;
                     for (unsigned int m = 0 ; m < 2 ; m++){
                         for (unsigned int n = 0 ; n < 2 ; n++){

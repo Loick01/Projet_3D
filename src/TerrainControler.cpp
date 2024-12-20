@@ -26,6 +26,7 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     */
     //Chunk::setListeStructures(structures);
 
+    this->biomeChart = false;
     this->mg = new MapGenerator(this->planeWidth, this->planeLength, this->seedTerrain, this->octave); 
     this->mg->generateImage();
     int widthHeightmap, lengthHeightMap, channels;
@@ -33,7 +34,6 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     this->nbChunkTerrain = 1;
     this->buildPlanChunks(dataPixels, widthHeightmap, lengthHeightMap);
     stbi_image_free(dataPixels);
-
 }
 
 // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
@@ -69,7 +69,7 @@ void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeigh
         for (int j = 0 ; j < this->planeLength ; j++){
             for (int k = 0 ; k < this->planeHeight ; k++){
                 bool extreme = (i*j*k == 0) || (j == this->planeLength-1) || (i == this->planeWidth-1);
-                Chunk *c = new Chunk(i, j, k, ng, extreme, k >= this->planeHeight-this->nbChunkTerrain, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain, this->nbChunkTerrain-(this->planeHeight-k));
+                Chunk *c = new Chunk(i, j, k, ng, extreme, k >= this->planeHeight-this->nbChunkTerrain, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain, this->nbChunkTerrain-(this->planeHeight-k), this);
                 this->listeChunks.push_back(c);
             }
         }
@@ -296,4 +296,31 @@ Chunk* TerrainControler::getChunkAt(int pos_i, int pos_k, int pos_j){
         return nullptr;
     }
     return this->listeChunks[pos_i * (this->planeHeight * this->planeLength) + pos_j * this->planeHeight + pos_k];
+}
+
+
+CelluleBiome TerrainControler::getCellBiomeFromBlock(CelluleBiome currentCell, float precipitation, float humidite){
+    if (currentCell.isDivide){
+        for (unsigned int i = 0 ; i < currentCell.cs.size() ; i++){
+            if (precipitation >= currentCell.cs[i].x_data[0] && precipitation <= currentCell.cs[i].x_data[2] && humidite >= currentCell.cs[i].y_data[0] && humidite <= currentCell.cs[i].y_data[1]){
+                return this->getCellBiomeFromBlock(currentCell.cs[i], precipitation, humidite);
+            }
+        }
+    }else{
+        return currentCell;
+    }
+}
+
+int TerrainControler::getBiomeID(float precipitation, float humidite){
+    return this->getCellBiomeFromBlock(this->racineBiomeChart, precipitation, humidite).typeBiome;
+    //return 0;
+}
+
+void TerrainControler::setBiomeChart(CelluleBiome racineBiomeChart){
+    this->racineBiomeChart = racineBiomeChart;
+    this->biomeChart = true;
+}
+
+bool TerrainControler::hasBiomeChart(){
+    return this->biomeChart;
 }
