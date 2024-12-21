@@ -4,7 +4,7 @@
 
 // std::vector<std::vector<Structure>> Chunk::structures; // Permet d'éviter les erreurs de lien à la compilation
 
-Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool terrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc){
+Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, int nbTerrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, unsigned char* dataPixelsCaveAC, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc){
     this->pos_i = i;
     this->pos_j = j;
     this->pos_k = k;
@@ -14,17 +14,18 @@ Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, bool extreme, bool t
     if (typeChunk==0){
         this->buildFullChunk();
     }else if (typeChunk==1){
-        this->buildCheeseChunk(i, j, k, noiseGenerator, extreme);
+        this->buildCheeseChunk(i, j, k, noiseGenerator);
     }else if (typeChunk==1){
         this->buildSinusChunk();
     }else if (typeChunk==2){
         this->buildFlatChunk();
     }else if (typeChunk==3){
-        if (terrainChunk){
+        if (k >= nbTerrainChunk){
             this->buildProceduralChunk(dataPixels, widthHeightmap, lengthHeightMap, posWidthChunk, posLengthChunk, seed, hauteurChunkTerrain, tc, noiseGenerator);
         }else{
-            this->buildCheeseChunk(i, j, k, noiseGenerator, extreme);
+            //this->buildCheeseChunk(i, j, k, noiseGenerator);
             //this->buildFullChunk();
+            this->buildCaveChunk(k, dataPixelsCaveAC, posWidthChunk, posLengthChunk, widthHeightmap);
         }
     }
 }
@@ -75,7 +76,39 @@ void Chunk::buildFullChunk(){
     }
 }
 
-void Chunk::buildCheeseChunk(int a, int b, int c, FastNoise noiseGenerator, bool extreme){
+void Chunk::buildCaveChunk(int hauteurChunk, unsigned char* dataPixelsCaveAC, int posWidthChunk, int posLengthChunk, int widthHeightmap){
+    this->listeVoxels.clear();
+
+    // On remplit entièrement le chunk de STONE_BLOCK
+    for (int k=0;k<CHUNK_SIZE;k++){
+        for (int j=0;j<CHUNK_SIZE;j++){
+            for (int i=0;i<CHUNK_SIZE;i++){
+                Voxel *vox = new Voxel(glm::vec3(this->position[0]+i,this->position[1]+k,this->position[2]+j),rand()%NB_BLOCK); 
+                vox->setId(STONE_BLOCK);
+                this->listeVoxels.push_back(vox);
+            }
+        }
+    }
+
+    // On génère la grotte (pour l'instant au chunk le plus bas, sans variation d'hauteur et sur 5 blocs de haut)
+    if (hauteurChunk == 0){
+        for (int j=0;j<CHUNK_SIZE;j++){
+            for (int i=0;i<CHUNK_SIZE;i++){
+                for (int k = 16 ; k < 22 ; k++){
+                    int indInText = posLengthChunk + posWidthChunk + j*widthHeightmap + i;
+                    if (dataPixelsCaveAC[indInText]==255){
+                        unsigned int vox_index = k*CHUNK_SIZE*CHUNK_SIZE + j*CHUNK_SIZE + i;
+                        Voxel *vox = this->listeVoxels[vox_index];
+                        delete vox;
+                        this->listeVoxels[vox_index] = nullptr;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Chunk::buildCheeseChunk(int a, int b, int c, FastNoise noiseGenerator){
     this->listeVoxels.clear();
 
     for (int k=0;k<CHUNK_SIZE;k++){

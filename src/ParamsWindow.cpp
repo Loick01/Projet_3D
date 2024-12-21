@@ -92,10 +92,14 @@ void ParamsWindow::modifTerrain(){
     else this->terrainControler->setUseBiomeChart(false);
 
     this->mg->generateImageSurface();
+    this->mg->generateImageCave_AC();
+    this->mg->generateImageCave_Perlin();
     int widthHeightmap, lengthHeightmap, channels;
     unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightmap, &channels, 1);
-    this->terrainControler->buildPlanChunks(dataPixels, widthHeightmap, lengthHeightmap);
+    unsigned char* dataPixelsCaveAC = stbi_load("../Textures/cave_AC.png", &widthHeightmap, &lengthHeightmap, &channels, 1);
+    this->terrainControler->buildPlanChunks(dataPixels, dataPixelsCaveAC, widthHeightmap, lengthHeightmap);
     stbi_image_free(dataPixels);
+    stbi_image_free(dataPixelsCaveAC);
     this->hitboxPlayer->setPosition(glm::vec3(-0.5f,(terrainControler->getPlaneHeight())*32.0f,-0.5f));
     this->hitboxPlayer->resetCanTakeDamage(); // Le joueur ne prends pas de dégâts de chute s'il tombe de trop haut au moment du changement de terrain
 }

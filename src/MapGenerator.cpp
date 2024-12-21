@@ -64,7 +64,7 @@ int MapGenerator::countWallNeighbor(unsigned char* dataPixels, int widthHeightma
   return wall_neighbor;
 }
 
-// Faire varier la probabilité d'apparition initiale d'un cellule pleine, et le nombre d'itération
+// Faire varier la probabilité d'apparition initiale d'un cellule pleine, le nombre d'itération, les règles d'évolution de l'automate
 // Ce serait bien d'intégrer directement le résultat dans la fenêtre ImGui
 void MapGenerator::generateImageCave_AC(){
   int widthHeightmap=this->widthMap*32;
@@ -102,6 +102,24 @@ void MapGenerator::generateImageCave_AC(){
   stbi_write_png("../Textures/cave_AC.png", widthHeightmap, lengthHeightmap, 1, dataPixels, widthHeightmap);
   free(dataPixels);
   free(nextStepDataPixel);
+}
+
+void MapGenerator::generateImageCave_Perlin(){
+  int widthHeightmap=this->widthMap*32;
+  int lengthHeightmap=this->lengthMap*32;
+
+  int dataSize = widthHeightmap*lengthHeightmap;
+  unsigned char* dataPixels=(unsigned char*)malloc(sizeof(unsigned char)*dataSize);
+
+  for(int i=0;i<lengthHeightmap;i++){
+    for(int j=0;j<widthHeightmap;j++){
+      float value = this->noiseGenerator.GetNoise(i*5,j*5);
+      dataPixels[i*widthHeightmap+j] = abs(value) < 0.1 ? 255 : 0;
+    }
+  }
+
+  stbi_write_png("../Textures/cave_Perlin.png", widthHeightmap, lengthHeightmap, 1, dataPixels, widthHeightmap);
+  free(dataPixels);
 }
 
 void MapGenerator::setWidthMap(int widthMap){

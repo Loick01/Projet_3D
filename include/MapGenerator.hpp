@@ -24,6 +24,7 @@ class MapGenerator{
         ~MapGenerator();
         void generateImageSurface();
         void generateImageCave_AC();
+        void generateImageCave_Perlin();
         void setWidthMap(int widthMap);
         void setLengthMap(int lengthMap);
         void setHeightMap(int heightMap);

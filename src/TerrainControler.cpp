@@ -30,11 +30,14 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     this->mg = new MapGenerator(this->planeWidth, this->planeLength, this->seedTerrain, this->octave); 
     this->mg->generateImageSurface();
     this->mg->generateImageCave_AC();
+    this->mg->generateImageCave_Perlin();
     int widthHeightmap, lengthHeightMap, channels;
     unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightMap, &channels, 1);
+    unsigned char* dataPixelsCaveAC = stbi_load("../Textures/cave_AC.png", &widthHeightmap, &lengthHeightMap, &channels, 1);
     this->nbChunkTerrain = 1;
-    this->buildPlanChunks(dataPixels, widthHeightmap, lengthHeightMap);
+    this->buildPlanChunks(dataPixels, dataPixelsCaveAC, widthHeightmap, lengthHeightMap);
     stbi_image_free(dataPixels);
+    stbi_image_free(dataPixelsCaveAC);
 }
 
 // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
@@ -59,7 +62,7 @@ std::vector<Chunk*> TerrainControler::getListeChunks(){
     return this->listeChunks;
 }
 
-void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeightmap, int lengthHeightMap){
+void TerrainControler::buildPlanChunks(unsigned char* dataPixels, unsigned char* dataPixelsCaveAC, int widthHeightmap, int lengthHeightMap){
     FastNoise ng = this->mg->getNoiseGenerator();
     
     for (int i = 0 ; i < this->listeChunks.size() ; i++){
@@ -69,8 +72,7 @@ void TerrainControler::buildPlanChunks(unsigned char* dataPixels, int widthHeigh
     for (int i = 0 ; i < this->planeWidth ; i++){
         for (int j = 0 ; j < this->planeLength ; j++){
             for (int k = 0 ; k < this->planeHeight ; k++){
-                bool extreme = (i*j*k == 0) || (j == this->planeLength-1) || (i == this->planeWidth-1);
-                Chunk *c = new Chunk(i, j, k, ng, extreme, k >= this->planeHeight-this->nbChunkTerrain, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain, this->nbChunkTerrain-(this->planeHeight-k), this);
+                Chunk *c = new Chunk(i, j, k, ng, this->planeHeight-this->nbChunkTerrain, glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), this->typeChunk, dataPixels, dataPixelsCaveAC, widthHeightmap, lengthHeightMap, i*32,j*32*this->planeWidth*32, seedTerrain, this->nbChunkTerrain-(this->planeHeight-k), this);
                 this->listeChunks.push_back(c);
             }
         }

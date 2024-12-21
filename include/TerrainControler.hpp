@@ -42,7 +42,7 @@ class TerrainControler{
         TerrainControler(); // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
         ~TerrainControler();
         std::vector<Chunk*> getListeChunks();
-        void buildPlanChunks(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap);
+        void buildPlanChunks(unsigned char* dataPixels, unsigned char* dataPixelsCaveAC, int widthHeightmap, int heightHeightmap);
         void buildEditorChunk();
         int getPlaneWidth();
         int* getRefToPlaneWidth();
