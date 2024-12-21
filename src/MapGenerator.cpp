@@ -5,12 +5,18 @@ float MapGenerator::useContinentalnessSpline(float x, float y){
   return this->getContinentalnessByInterpolation(p_value);
 }
 
+float MapGenerator::useCaveSpline(float x, float y){
+  float p_value = this->noiseGenerator.GetNoise(x/4,y/4);
+  return this->getCaveHeightByInterpolation(p_value);
+}
+
 MapGenerator::MapGenerator(int wMap, int lMap, int seed, int octave){
   this->widthMap = wMap;
   this->lengthMap = lMap;
   this->seed = seed;
   this->octave = octave;
-  this->has_spline = false;
+  this->has_terrain_spline = false;
+  this->has_cave_spline = false;
   //enum NoiseType { Value, ValueFractal, Perlin, PerlinFractal, Simplex, SimplexFractal, Cellular, WhiteNoise, Cubic, CubicFractal };
   this->noiseGenerator.SetNoiseType(FastNoise::SimplexFractal);
   this->noiseGenerator.SetFractalOctaves(octave);
@@ -36,8 +42,8 @@ void MapGenerator::generateImageSurface(){
   for(int i=0;i<lengthHeightmap;i++){
     for(int j=0;j<widthHeightmap;j++){
       float value;
-      if (this->has_spline){
-        value = useContinentalnessSpline(i,j);
+      if (this->has_terrain_spline){
+        value = this->useContinentalnessSpline(i,j);
       }else{
         value = ((this->noiseGenerator.GetNoise(i,j)+1)/2)*(this->nbChunkTerrain*32 - 1);
       }
@@ -56,7 +62,7 @@ int MapGenerator::countWallNeighbor(unsigned char* dataPixels, int widthHeightma
       int look_y = i+m;
       int look_x = j+n;
       // En dehors des limites de la carte
-      if (!(look_x < 0 || look_x >= widthHeightmap || look_y < 0 || look_y >= lengthHeightmap) && dataPixels[look_y*widthHeightmap+look_x]==255){ 
+      if (!(look_x < 0 || look_x >= widthHeightmap || look_y < 0 || look_y >= lengthHeightmap) && dataPixels[look_y*widthHeightmap+look_x]>0){ 
         ++wall_neighbor;
       }
     }
@@ -89,7 +95,12 @@ void MapGenerator::generateImageCave_AC(){
     for(int i=0;i<lengthHeightmap;i++){
       for(int j=0;j<widthHeightmap;j++){
         int wall_neighbor = this->countWallNeighbor(dataPixels, widthHeightmap, lengthHeightmap, i,j);
-        nextStepDataPixel[i*widthHeightmap+j] = wall_neighbor < 5 ? 0 : 255;
+
+        if (this->has_cave_spline && k == nb_iteration-1){ // A la dernière itération, on détermine la hauteur de la grotte à chaque block en fonction de la spline correspondante
+          nextStepDataPixel[i*widthHeightmap+j] = wall_neighbor < 5 ? 0 : this->useCaveSpline(i,j);
+        }else{
+          nextStepDataPixel[i*widthHeightmap+j] = wall_neighbor < 5 ? 0 : 16;
+        }
       }
     }
     for(int i=0;i<lengthHeightmap;i++){
@@ -148,27 +159,50 @@ void MapGenerator::setNbChunkTerrain(int nbChunkTerrain){
   this->nbChunkTerrain = nbChunkTerrain;
 }
 
-void MapGenerator::setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values){
-  this->perlin_values = perlin_values;
+void MapGenerator::setContinentalnessSpline(std::vector<float> terrain_simplex_values, std::vector<float> continentalness_values){
+  this->terrain_simplex_values = terrain_simplex_values;
   this->continentalness_values = continentalness_values;
-  this->has_spline = true;
+  this->has_terrain_spline = true;
+}
+
+void MapGenerator::setCaveSpline(std::vector<float> cave_simplex_values, std::vector<float> cave_height_values){
+  this->cave_simplex_values = cave_simplex_values;
+  this->cave_height_values = cave_height_values;
+  this->has_cave_spline = true;
 }
 
 float MapGenerator::getContinentalnessByInterpolation(float p_value){
     float index_start, index_end;
-    for (unsigned int i = 0 ; i < this->perlin_values.size()-1 ; i++){
-        if (p_value >= this->perlin_values[i] && p_value <= this->perlin_values[i+1]){
+    for (unsigned int i = 0 ; i < this->terrain_simplex_values.size()-1 ; i++){
+        if (p_value >= this->terrain_simplex_values[i] && p_value <= this->terrain_simplex_values[i+1]){
             index_start = i;
             index_end = i+1;
             break;
         }
     }
 
-    return this->continentalness_values[index_start] + (p_value - this->perlin_values[index_start])*((this->continentalness_values[index_end]-this->continentalness_values[index_start])/(this->perlin_values[index_end]-this->perlin_values[index_start]));
+    return this->continentalness_values[index_start] + (p_value - this->terrain_simplex_values[index_start])*((this->continentalness_values[index_end]-this->continentalness_values[index_start])/(this->terrain_simplex_values[index_end]-this->terrain_simplex_values[index_start]));
 }
 
-void MapGenerator::setHasSpline(bool has_spline){
-  this->has_spline = has_spline;
+float MapGenerator::getCaveHeightByInterpolation(float p_value){
+    float index_start, index_end;
+    for (unsigned int i = 0 ; i < this->cave_simplex_values.size()-1 ; i++){
+        if (p_value >= this->cave_simplex_values[i] && p_value <= this->cave_simplex_values[i+1]){
+            index_start = i;
+            index_end = i+1;
+            break;
+        }
+    }
+
+    return this->cave_height_values[index_start] + (p_value - this->cave_simplex_values[index_start])*((this->cave_height_values[index_end]-this->cave_height_values[index_start])/(this->cave_simplex_values[index_end]-this->cave_simplex_values[index_start]));
+}
+
+void MapGenerator::setHasTerrainSpline(bool has_terrain_spline){
+  this->has_terrain_spline = has_terrain_spline;
+}
+
+void MapGenerator::setHasCaveSpline(bool has_cave_spline){
+  this->has_cave_spline = has_cave_spline;
 }
 
 FastNoise MapGenerator::getNoiseGenerator(){

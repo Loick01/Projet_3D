@@ -12,9 +12,12 @@ class MapGenerator{
         int seed;
         int octave;
 
-        std::vector<float> perlin_values;
+        std::vector<float> terrain_simplex_values;
         std::vector<float> continentalness_values;
-        bool has_spline;
+        bool has_terrain_spline;
+        std::vector<float> cave_simplex_values;
+        std::vector<float> cave_height_values;
+        bool has_cave_spline;
         FastNoise noiseGenerator;
         int countWallNeighbor(unsigned char* dataPixels, int widthHeightmap, int lengthHeightmap, int i, int j);
 
@@ -30,7 +33,9 @@ class MapGenerator{
         void setHeightMap(int heightMap);
         void setSeed(int seed);
         void setOctave(int octave);
-        void setHasSpline(bool has_spline);
+        void setHasTerrainSpline(bool has_terrain_spline);
+        void setHasCaveSpline(bool has_cave_spline);
+        void setCaveSpline(std::vector<float> cave_simplex_values, std::vector<float> cave_height_values);
         FastNoise getNoiseGenerator();
 
         int nbChunkTerrain;
@@ -38,8 +43,11 @@ class MapGenerator{
         void setNbChunkTerrain(int nbChunkTerrain);
 
 
-	float useContinentalnessSpline(float x, float y);
+	    float useContinentalnessSpline(float x, float y);
         void setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values);
         float getContinentalnessByInterpolation(float p_value);
+        float getCaveHeightByInterpolation(float p_value);
+
+        float useCaveSpline(float x, float y);
 
 };

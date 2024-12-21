@@ -23,9 +23,13 @@ class ParamsWindow{
         static char nameStructure[512]; // On met cet attribut en static pour que le texte saisi reste le même entre 2 frames
         bool clearEntity; // Va servir à régler le problème de segfault qui apparaît au moment où on change la taille du terrain
 
-        std::vector<float> simplex_values;
+        std::vector<float> terrain_simplex_values;
         std::vector<float> continentalness_values;
-        bool use_spline;
+        bool use_terrain_spline;
+
+        std::vector<float> cave_simplex_values;
+        std::vector<float> cave_height_values;
+        bool use_cave_spline;
 
         CelluleBiome racineBiomeChart;
         bool useBiomeChart;
@@ -46,4 +50,5 @@ class ParamsWindow{
         bool getClearEntity();
         void resetClearEntity();
         void resetContinentalnessPlot();
+        void resetCavePlot();
 };

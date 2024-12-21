@@ -90,17 +90,21 @@ void Chunk::buildCaveChunk(int hauteurChunk, unsigned char* dataPixelsCaveAC, in
         }
     }
 
-    // On génère la grotte (pour l'instant au chunk le plus bas, sans variation d'hauteur et sur 5 blocs de haut)
+    // On génère la grotte (pour l'instant au chunk le plus bas, et sur 5 blocs de haut)
+    // Penser à étendre la génération des grottes sur des chunks avec des hauteurs différentes
     if (hauteurChunk == 0){
         for (int j=0;j<CHUNK_SIZE;j++){
             for (int i=0;i<CHUNK_SIZE;i++){
-                for (int k = 16 ; k < 22 ; k++){
-                    int indInText = posLengthChunk + posWidthChunk + j*widthHeightmap + i;
-                    if (dataPixelsCaveAC[indInText]==255){
-                        unsigned int vox_index = k*CHUNK_SIZE*CHUNK_SIZE + j*CHUNK_SIZE + i;
-                        Voxel *vox = this->listeVoxels[vox_index];
-                        delete vox;
-                        this->listeVoxels[vox_index] = nullptr;
+                int indInText = posLengthChunk + posWidthChunk + j*widthHeightmap + i;
+                unsigned char heightBlockCave = dataPixelsCaveAC[indInText];
+                if (heightBlockCave>0){
+                    for (int k = heightBlockCave ; k < heightBlockCave+5 ; k++){
+                        if (k < 32){
+                            unsigned int vox_index = k*CHUNK_SIZE*CHUNK_SIZE + j*CHUNK_SIZE + i;
+                            Voxel *vox = this->listeVoxels[vox_index];
+                            delete vox;
+                            this->listeVoxels[vox_index] = nullptr;
+                        }
                     }
                 }
             }
