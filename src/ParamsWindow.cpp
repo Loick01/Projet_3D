@@ -10,6 +10,7 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
     this->inEditor = false;
     this->clearEntity = false;
     this->use_spline = false;
+    this->useBiomeChart = false;
     this->speedPlayer = player->getRefToSpeed();
     this->posJoueur = player->getHitbox()->getRefToBottomPoint();
     this->planeWidth = terrainControler->getRefToPlaneWidth();
@@ -84,13 +85,13 @@ void ParamsWindow::resetClearEntity(){
 
 void ParamsWindow::modifTerrain(){
 	this->clearEntity = true; // On fera disparaître les entités au moment où on change le terrain
-    if (this->use_spline){
-        this->mg->setContinentalnessSpline(this->simplex_values, this->continentalness_values);
-    }else{
-        this->mg->setHasSpline(false);
-    }
-    this->terrainControler->setBiomeChart(this->racineBiomeChart);
-    this->mg->generateImage();
+    if (this->use_spline) this->mg->setContinentalnessSpline(this->simplex_values, this->continentalness_values);
+    else this->mg->setHasSpline(false);
+
+    if (this->useBiomeChart) this->terrainControler->setBiomeChart(this->racineBiomeChart);   
+    else this->terrainControler->setUseBiomeChart(false);
+
+    this->mg->generateImageSurface();
     int widthHeightmap, lengthHeightmap, channels;
     unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightmap, &channels, 1);
     this->terrainControler->buildPlanChunks(dataPixels, widthHeightmap, lengthHeightmap);
@@ -118,9 +119,8 @@ CelluleBiome* ParamsWindow::getSelectedCellBiome(CelluleBiome* currentCell, ImPl
                 return this->getSelectedCellBiome(&(currentCell->cs[i]), pos);
             }
         }
-    }else{
-        return currentCell;
     }
+    return currentCell;
 }
 
 void ParamsWindow::draw(){
@@ -271,6 +271,10 @@ void ParamsWindow::draw(){
 
         ImGui::Spacing();
 
+        ImGui::Checkbox("Utiliser la Biome Chart", &this->useBiomeChart);
+
+        ImGui::Spacing();
+
         /*
         // Type 0 = Plein ; Type 1 = Sinus ; Type 2 = Flat ; Type 3 = Procedural
         if (ImGui::SliderInt("Type de chunk", &typeChunk, 0, 3)){
@@ -355,6 +359,8 @@ void ParamsWindow::draw(){
 
     ImVec2 biome_chart_size(400, 400);
 
+    // Faire un bouton pour réinitialiser la charte
+    
     if (ImPlot::BeginPlot("Biome Chart", biome_chart_size, ImPlotFlags_NoMenus | ImPlotFlags_NoLegend)) {
         ImPlot::SetupAxis(ImAxis_X1, "Précipitation", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
         ImPlot::SetupAxisLimits(ImAxis_X1, 0.0, 1.0);

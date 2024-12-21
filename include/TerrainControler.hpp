@@ -70,4 +70,5 @@ class TerrainControler{
         int getBiomeID(float precipitation, float humidite);
         void setBiomeChart(CelluleBiome racineBiomeChart);
         bool hasBiomeChart();
+        void setUseBiomeChart(bool biomeChart);
 };

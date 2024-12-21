@@ -28,7 +28,8 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
 
     this->biomeChart = false;
     this->mg = new MapGenerator(this->planeWidth, this->planeLength, this->seedTerrain, this->octave); 
-    this->mg->generateImage();
+    this->mg->generateImageSurface();
+    this->mg->generateImageCave_AC();
     int widthHeightmap, lengthHeightMap, channels;
     unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightMap, &channels, 1);
     this->nbChunkTerrain = 1;
@@ -306,9 +307,8 @@ CelluleBiome TerrainControler::getCellBiomeFromBlock(CelluleBiome currentCell, f
                 return this->getCellBiomeFromBlock(currentCell.cs[i], precipitation, humidite);
             }
         }
-    }else{
-        return currentCell;
     }
+    return currentCell;
 }
 
 int TerrainControler::getBiomeID(float precipitation, float humidite){
@@ -319,6 +319,10 @@ int TerrainControler::getBiomeID(float precipitation, float humidite){
 void TerrainControler::setBiomeChart(CelluleBiome racineBiomeChart){
     this->racineBiomeChart = racineBiomeChart;
     this->biomeChart = true;
+}
+
+void TerrainControler::setUseBiomeChart(bool biomeChart){
+    this->biomeChart = biomeChart;
 }
 
 bool TerrainControler::hasBiomeChart(){

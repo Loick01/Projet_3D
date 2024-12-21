@@ -28,6 +28,7 @@ class ParamsWindow{
         bool use_spline;
 
         CelluleBiome racineBiomeChart;
+        bool useBiomeChart;
 
         int *nbChunkTerrain;
 

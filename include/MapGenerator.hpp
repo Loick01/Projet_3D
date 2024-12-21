@@ -16,12 +16,14 @@ class MapGenerator{
         std::vector<float> continentalness_values;
         bool has_spline;
         FastNoise noiseGenerator;
+        int countWallNeighbor(unsigned char* dataPixels, int widthHeightmap, int lengthHeightmap, int i, int j);
 
     public:
         MapGenerator(int wMap, int hMap, int seed, int octave);
         MapGenerator();
         ~MapGenerator();
-        void generateImage();
+        void generateImageSurface();
+        void generateImageCave_AC();
         void setWidthMap(int widthMap);
         void setLengthMap(int lengthMap);
         void setHeightMap(int heightMap);
@@ -38,4 +40,5 @@ class MapGenerator{
 	float useContinentalnessSpline(float x, float y);
         void setContinentalnessSpline(std::vector<float> perlin_values, std::vector<float> continentalness_values);
         float getContinentalnessByInterpolation(float p_value);
+
 };

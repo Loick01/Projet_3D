@@ -26,7 +26,7 @@ MapGenerator::~MapGenerator(){
   // std::cout << "Destructeur de MapGenerator\n";
 }
 
-void MapGenerator::generateImage(){
+void MapGenerator::generateImageSurface(){
   int widthHeightmap=this->widthMap*32;
   int lengthHeightmap=this->lengthMap*32;
 
@@ -47,6 +47,61 @@ void MapGenerator::generateImage(){
 
   stbi_write_png("../Textures/terrain.png", widthHeightmap, lengthHeightmap, 1, dataPixels, widthHeightmap);
   free(dataPixels);
+}
+
+int MapGenerator::countWallNeighbor(unsigned char* dataPixels, int widthHeightmap, int lengthHeightmap, int i, int j){
+  int wall_neighbor = 0;
+  for (int m = -1 ; m < 2 ; m++){
+    for (int n = -1 ; n < 2 ; n++){
+      int look_y = i+m;
+      int look_x = j+n;
+      // En dehors des limites de la carte
+      if (!(look_x < 0 || look_x >= widthHeightmap || look_y < 0 || look_y >= lengthHeightmap) && dataPixels[look_y*widthHeightmap+look_x]==255){ 
+        ++wall_neighbor;
+      }
+    }
+  }
+  return wall_neighbor;
+}
+
+// Faire varier la probabilité d'apparition initiale d'un cellule pleine, et le nombre d'itération
+// Ce serait bien d'intégrer directement le résultat dans la fenêtre ImGui
+void MapGenerator::generateImageCave_AC(){
+  int widthHeightmap=this->widthMap*32;
+  int lengthHeightmap=this->lengthMap*32;
+
+  int dataSize = widthHeightmap*lengthHeightmap;
+  unsigned char* dataPixels=(unsigned char*)malloc(sizeof(unsigned char)*dataSize);
+
+  // Initialisation --> Carte aléatoire
+  for(int i=0;i<lengthHeightmap;i++){
+    for(int j=0;j<widthHeightmap;j++){
+      unsigned char value = (rand()%100 < 45 ? 0 : 255);
+      dataPixels[i*widthHeightmap+j] = value;
+    }
+  }
+
+  // Evolution selon règles de l'automate cellulaire
+  unsigned int nb_iteration = 5;
+  unsigned char* nextStepDataPixel=(unsigned char*)malloc(sizeof(unsigned char)*dataSize);
+
+  for (unsigned int k = 0 ; k < nb_iteration ; k++){
+    for(int i=0;i<lengthHeightmap;i++){
+      for(int j=0;j<widthHeightmap;j++){
+        int wall_neighbor = this->countWallNeighbor(dataPixels, widthHeightmap, lengthHeightmap, i,j);
+        nextStepDataPixel[i*widthHeightmap+j] = wall_neighbor < 5 ? 0 : 255;
+      }
+    }
+    for(int i=0;i<lengthHeightmap;i++){
+      for(int j=0;j<widthHeightmap;j++){
+        dataPixels[i*widthHeightmap+j] = nextStepDataPixel[i*widthHeightmap+j];
+      }
+    }
+  }
+
+  stbi_write_png("../Textures/cave_AC.png", widthHeightmap, lengthHeightmap, 1, dataPixels, widthHeightmap);
+  free(dataPixels);
+  free(nextStepDataPixel);
 }
 
 void MapGenerator::setWidthMap(int widthMap){

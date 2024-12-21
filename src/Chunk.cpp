@@ -81,7 +81,7 @@ void Chunk::buildCheeseChunk(int a, int b, int c, FastNoise noiseGenerator, bool
     for (int k=0;k<CHUNK_SIZE;k++){
         for (int j=0;j<CHUNK_SIZE;j++){     
             for (int i=0;i<CHUNK_SIZE;i++){ 
-                float density = noiseGenerator.GetNoise((a*32 + i) * 6, (c*32 + k) * 6, (b*32 + j) * 6);
+                float density = noiseGenerator.GetNoise((a*32 + i) * 1, (c*32 + k) * 1, (b*32 + j) * 1);
                 if (density > 0){
                     int typeBlock = rand() % 500;
                     int sizeVein = rand() % 3;
