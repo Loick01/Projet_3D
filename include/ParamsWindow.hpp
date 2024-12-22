@@ -38,6 +38,12 @@ class ParamsWindow{
 
         void drawCellInChart(CelluleBiome cb);
         CelluleBiome* getSelectedCellBiome(CelluleBiome* currentCell, ImPlotPoint pos);
+        std::string saveBiomeChart(CelluleBiome* currentCell, int numCell);
+        void resetBiomeChart();
+
+        void saveConfigTerrain();
+        void openConfigTerrain();
+
     public:
         ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player);
         ~ParamsWindow();

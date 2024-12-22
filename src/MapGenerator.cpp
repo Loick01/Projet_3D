@@ -82,7 +82,7 @@ void MapGenerator::generateImageCave_AC(){
   // Initialisation --> Carte aléatoire
   for(int i=0;i<lengthHeightmap;i++){
     for(int j=0;j<widthHeightmap;j++){
-      unsigned char value = (rand()%100 < 45 ? 0 : 255);
+      unsigned char value = (rand()%100 < 50 ? 0 : 255);
       dataPixels[i*widthHeightmap+j] = value;
     }
   }

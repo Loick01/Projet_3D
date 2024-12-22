@@ -28,16 +28,7 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
 
     this->nbChunkTerrain = terrainControler->getRefToNbChunkTerrain();
 
-    this->racineBiomeChart.isDivide = false;
-    this->racineBiomeChart.typeBiome = 2;
-    this->racineBiomeChart.cs.clear();
-    float t_x[4] = { 0.0f, 0.0f, 1.0f, 1.0f};
-    float t_y[4] = { 0.0f, 1.0f, 1.0f, 0.0f};
-    for (unsigned int i = 0 ; i < 4 ; i++){
-        this->racineBiomeChart.x_data[i] = t_x[i];
-        this->racineBiomeChart.y_data[i] = t_y[i];
-    }
-    this->racineBiomeChart.sizeCell = 1.0f;
+    this->resetBiomeChart();
 
     this->terrainControler->setBiomeChart(this->racineBiomeChart); // Biome Chart par défaut
 }
@@ -131,6 +122,87 @@ CelluleBiome* ParamsWindow::getSelectedCellBiome(CelluleBiome* currentCell, ImPl
     }
     return currentCell;
 }
+
+std::string ParamsWindow::saveBiomeChart(CelluleBiome* currentCell, int numCell){
+    std::string partial_res = "";
+    if (currentCell->isDivide){
+        partial_res = std::to_string(numCell);
+        bool one_is_divide = false;
+        for (unsigned int i = 0 ; i < currentCell->cs.size() ; i++){
+            if (currentCell->cs[i].isDivide){
+                if (!one_is_divide){
+                    partial_res += "/";
+                    one_is_divide = true;
+                }
+                partial_res += this->saveBiomeChart(&(currentCell->cs[i]), i);
+            }
+        }
+        if (one_is_divide){
+            partial_res += "/";
+        }
+    }
+    return partial_res;
+}
+
+void ParamsWindow::saveConfigTerrain(){
+    std::string saveFileName = "../configTerrainSave.txt";
+    std::ofstream saveFile(saveFileName);
+
+    if (saveFile.is_open()) {
+        saveFile << this->saveBiomeChart(&this->racineBiomeChart,0) << "\n";
+        // Sauvegarde de la spline utilisée pour la surface du terrain
+        for (unsigned int i = 0 ; i < this->terrain_simplex_values.size() ; i++){
+            saveFile << this->terrain_simplex_values[i] << "/" << this->continentalness_values[i] << " ";
+        }
+        saveFile << "\n";
+        // Sauvegarde de la spline utilisée pour la hauteur de la grotte
+        for (unsigned int i = 0 ; i < this->cave_simplex_values.size() ; i++){
+            saveFile << this->cave_simplex_values[i] << "/" << this->cave_height_values[i] << " ";
+        }
+        saveFile << "\n";
+        saveFile.close();
+    } else {
+        std::cerr << "Erreur : impossible d'ouvrir le fichier.\n";
+    }
+}
+
+void ParamsWindow::openConfigTerrain(){
+    std::string saveFileName = "../configTerrainSave.txt";
+    std::ifstream saveFile(saveFileName);
+    if (saveFile.is_open()) {
+        this->terrain_simplex_values.clear();
+        this->continentalness_values.clear();
+        this->cave_simplex_values.clear();
+        this->cave_height_values.clear();
+        std::string next_line;
+        int n_line = 0;
+        while (std::getline(saveFile, next_line)) {
+            if (n_line == 0){ // Pour l'instant on ne s'occupe pas de l'ouverture de la biome chart
+                ++n_line;
+                continue;
+            }
+            std::istringstream flux_next_line(next_line);
+            std::string next_word;
+            while (flux_next_line >> next_word) {
+                if (n_line == 1){ // Ouverture de la spline de la surface du terrain
+                    std::size_t separation = next_word.find("/");
+                    this->terrain_simplex_values.push_back(std::stof(next_word.substr(0,separation)));
+                    this->continentalness_values.push_back(std::stof(next_word.substr(separation+1)));
+                }else if (n_line == 2){ // Ouverture de la spline de hauteur de la grotte
+                    std::size_t separation = next_word.find("/");
+                    this->cave_simplex_values.push_back(std::stof(next_word.substr(0,separation)));
+                    this->cave_height_values.push_back(std::stof(next_word.substr(separation+1)));
+                }
+            }
+            ++n_line;
+        }
+        saveFile.close();
+    } else {
+        std::cerr << "Erreur : Aucun fichier de configuration existant.\n";
+    }
+}
+
+
 
 void ParamsWindow::draw(){
     // Start the ImGui frame
@@ -276,6 +348,13 @@ void ParamsWindow::draw(){
             this->modifTerrain();
         }
 
+        if (ImGui::Button("Save Terrain Config")){
+            this->saveConfigTerrain();
+        }
+        if (ImGui::Button("Open Terrain Config")){
+            this->openConfigTerrain();
+        }
+
         ImGui::Checkbox("Utiliser la spline pour le terrain", &this->use_terrain_spline);
 
         ImGui::Spacing();
@@ -371,8 +450,6 @@ void ParamsWindow::draw(){
     ImGui::Spacing();
 
     ImVec2 biome_chart_size(400, 400);
-
-    // Faire un bouton pour réinitialiser la charte
     
     if (ImPlot::BeginPlot("Biome Chart", biome_chart_size, ImPlotFlags_NoMenus | ImPlotFlags_NoLegend)) {
         ImPlot::SetupAxis(ImAxis_X1, "Précipitation", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
@@ -407,6 +484,10 @@ void ParamsWindow::draw(){
         }
 
         ImPlot::EndPlot();
+    }
+
+    if (ImGui::Button("Reset Biome Chart")){
+        this->resetBiomeChart();
     }
 
     ImGui::Spacing();
@@ -492,6 +573,19 @@ void ParamsWindow::resetContinentalnessPlot(){
 void ParamsWindow::resetCavePlot(){
     this->cave_simplex_values = {-1.0, 1.0};
     this->cave_height_values = {16.0, 16.0};
+}
+
+void ParamsWindow::resetBiomeChart(){
+    this->racineBiomeChart.isDivide = false;
+    this->racineBiomeChart.typeBiome = 2;
+    this->racineBiomeChart.cs.clear();
+    float t_x[4] = { 0.0f, 0.0f, 1.0f, 1.0f};
+    float t_y[4] = { 0.0f, 1.0f, 1.0f, 0.0f};
+    for (unsigned int i = 0 ; i < 4 ; i++){
+        this->racineBiomeChart.x_data[i] = t_x[i];
+        this->racineBiomeChart.y_data[i] = t_y[i];
+    }
+    this->racineBiomeChart.sizeCell = 1.0f;
 }
 
 void ParamsWindow::attachNewTerrain(TerrainControler *terrainControler){
