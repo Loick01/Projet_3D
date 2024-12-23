@@ -138,10 +138,57 @@ std::string ParamsWindow::saveBiomeChart(CelluleBiome* currentCell, int numCell)
             }
         }
         if (one_is_divide){
-            partial_res += "/";
+            partial_res += "\\";
         }
     }
     return partial_res;
+}
+
+void ParamsWindow::divisionCell(CelluleBiome* tc){
+    tc->isDivide = true;
+    float midCell = tc->sizeCell/2.0f;
+    for (unsigned int i = 0 ; i < 2 ; i++){
+        for (unsigned int j = 0 ; j < 2 ; j++){
+            CelluleBiome new_cell;
+            new_cell.typeBiome = std::min((int)i*2+(int)j,2); // Plus tard on fera en sorte de contrôler le type des biomes via la fenêtre ImPlot
+            new_cell.isDivide = false;
+            for (unsigned int m = 0 ; m < 2 ; m++){
+                for (unsigned int n = 0 ; n < 2 ; n++){
+                    new_cell.x_data[m*2+n] = tc->x_data[0] + i*midCell + m*midCell;
+                    new_cell.y_data[m*2+n] = tc->y_data[0] + j*midCell + (m==0?n:1-n)*midCell;
+                }
+            }
+            new_cell.sizeCell = midCell;
+            
+            tc->cs.push_back(new_cell);
+        }
+    }
+}
+
+void ParamsWindow::rebuildBiomeChart(CelluleBiome* currentCell, std::string next_word, int startPos, bool isInCC){
+    this->divisionCell(currentCell);
+    bool isFirst = true;
+    bool isIn = isInCC;
+    int count_enter = 0;
+    for (int i = startPos ; i < next_word.size() ; i++){
+        char nc = next_word[i];
+        if (nc != '/' && nc != '\\' && isIn){
+            this->rebuildBiomeChart(&currentCell->cs[nc-'0'], next_word, i+1, false);
+        }else if (nc == '/' && !isFirst && isIn){
+            isIn = false;
+            ++count_enter;
+        }else if (nc == '\\'){
+            --count_enter;
+            if (count_enter == 0){
+                isIn = true;
+            }
+        }else if (nc =='/' && isFirst){
+            isIn = true;
+        }
+
+        if (count_enter==-1) break;
+        isFirst = false;
+    }
 }
 
 void ParamsWindow::saveConfigTerrain(){
@@ -174,16 +221,16 @@ void ParamsWindow::openConfigTerrain(){
         this->continentalness_values.clear();
         this->cave_simplex_values.clear();
         this->cave_height_values.clear();
+        this->resetBiomeChart();
         std::string next_line;
         int n_line = 0;
         while (std::getline(saveFile, next_line)) {
-            if (n_line == 0){ // Pour l'instant on ne s'occupe pas de l'ouverture de la biome chart
-                ++n_line;
-                continue;
-            }
             std::istringstream flux_next_line(next_line);
             std::string next_word;
             while (flux_next_line >> next_word) {
+                if (n_line == 0 && next_word.size() > 0){ // Reconstruction de la biome chart
+                    this->rebuildBiomeChart(&this->racineBiomeChart, next_word, 2, true);
+                }
                 if (n_line == 1){ // Ouverture de la spline de la surface du terrain
                     std::size_t separation = next_word.find("/");
                     this->terrain_simplex_values.push_back(std::stof(next_word.substr(0,separation)));
@@ -463,24 +510,7 @@ void ParamsWindow::draw(){
             // Division en 4 du biome sélectionné dans la chart
             ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
             CelluleBiome* tc = this->getSelectedCellBiome(&this->racineBiomeChart, mouse_pos);
-            tc->isDivide = true;
-            float midCell = tc->sizeCell/2.0f;
-            for (unsigned int i = 0 ; i < 2 ; i++){
-                for (unsigned int j = 0 ; j < 2 ; j++){
-                    CelluleBiome new_cell;
-                    new_cell.typeBiome = std::min((int)i*2+(int)j,2); // Plus tard on fera en sorte de contrôler le type des biomes via la fenêtre ImPlot
-                    new_cell.isDivide = false;
-                    for (unsigned int m = 0 ; m < 2 ; m++){
-                        for (unsigned int n = 0 ; n < 2 ; n++){
-                            new_cell.x_data[m*2+n] = tc->x_data[0] + i*midCell + m*midCell;
-                            new_cell.y_data[m*2+n] = tc->y_data[0] + j*midCell + (m==0?n:1-n)*midCell;
-                        }
-                    }
-                    new_cell.sizeCell = midCell;
-                    
-                    tc->cs.push_back(new_cell);
-                }
-            }
+            this->divisionCell(tc);
         }
 
         ImPlot::EndPlot();

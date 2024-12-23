@@ -43,6 +43,8 @@ class ParamsWindow{
 
         void saveConfigTerrain();
         void openConfigTerrain();
+        void divisionCell(CelluleBiome* tc);
+        void rebuildBiomeChart(CelluleBiome* currentCell, std::string next_word, int startPos, bool isInCC);
 
     public:
         ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player);
