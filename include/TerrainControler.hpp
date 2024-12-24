@@ -4,6 +4,15 @@
 #include "variables.h"
 
 #define RANGE 4
+#define CHUNK_SIZE 32
+
+struct BlockStructure{
+    int infoBlock[4];
+};
+
+struct Structure{
+    std::vector<BlockStructure> blocks;
+};
 
 class MapGenerator;
 class Chunk;
@@ -36,13 +45,18 @@ class TerrainControler{
         CelluleBiome racineBiomeChart;
         CelluleBiome getCellBiomeFromBlock(CelluleBiome currentCell, float precipitation, float humidite);
         bool biomeChart;
+
+        static std::vector<std::vector<Structure>> structures;
+        void constructStructure(int i, int j, int k);
+        bool generateStructure;
         
     public :
-        TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave/*, std::vector<std::vector<std::string>> nomStructure*/);
+        TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure);
         TerrainControler(); // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
         ~TerrainControler();
         std::vector<Chunk*> getListeChunks();
         void buildPlanChunks(unsigned char* dataPixels, unsigned char* dataPixelsCaveAC, int widthHeightmap, int heightHeightmap);
+        void buildStructures(unsigned char* dataPixels);
         void buildEditorChunk();
         int getPlaneWidth();
         int* getRefToPlaneWidth();
@@ -53,6 +67,7 @@ class TerrainControler{
         int* getRefToSeedTerrain();
         int* getRefToOctave();
         int* getRefToNbChunkTerrain();
+        bool* getRefToGenerateStructure();
         LocalisationBlock tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position);
         void breakBlock(LocalisationBlock lb);
         bool tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock);
@@ -71,4 +86,6 @@ class TerrainControler{
         void setBiomeChart(CelluleBiome racineBiomeChart);
         bool hasBiomeChart();
         void setUseBiomeChart(bool biomeChart);
+
+        static Structure readStructureFile(std::ifstream &file);
 };

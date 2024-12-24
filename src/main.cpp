@@ -374,7 +374,6 @@ int main(){
     programID_HUD = LoadShaders("../shaders/hud_vertex.vert", "../shaders/hud_frag.frag");
     //programID_Entity = LoadShaders("../shaders/entity_vertex.vert", "../shaders/entity_frag.frag");
 
-    /*
     std::vector<std::string> structureBiome0;
     structureBiome0.push_back("../Structures/Tree.txt");
     structureBiome0.push_back("../Structures/Tree_2.txt");
@@ -396,10 +395,9 @@ int main(){
     nomStructure.push_back(structureBiome0);
     nomStructure.push_back(structureBiome1);
     nomStructure.push_back(structureBiome2);
-    */
 
 	// Les 2 premiers paramètres du constructeur de TerrainControleur sont la taille du terrain (en nombre de chunk), en longueur et en profondeur (ici 3x3)
-    terrainControler = new TerrainControler(2, 2, 3, 3, 1000, 4/*, nomStructure*/);
+    terrainControler = new TerrainControler(2, 2, 3, 3, 1000, 4, nomStructure);
     player = new Player(glm::vec3(-0.5f,(terrainControler->getPlaneHeight())*32.0f,-0.5f), 1.8f, 0.6f, 6.0f, 1.5f); // Le joueur fait 1.8 bloc de haut, et 0.6 bloc de large et de long
     hitboxPlayer = player->getHitbox();
 

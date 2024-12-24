@@ -1,6 +1,8 @@
 #include <TerrainControler.hpp>
 
-TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave/*, std::vector<std::vector<std::string>> nomStructure*/){
+std::vector<std::vector<Structure>> TerrainControler::structures; // Permet d'éviter les erreurs de lien à la compilation
+
+TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure){
     this->planeWidth = planeWidth;
     this->planeLength = planeLength; 
     this->planeHeight = planeHeight;
@@ -10,21 +12,18 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     this->accumulateurDestructionBlock = 0.0f;
     this->mouseLeftClickHold = false;
     this->previousIdInChunk = -2; // Attention à ne surtout pas initialiser avec -1 (sinon on tentera de casser un bloc hors liste de voxel)
+    this->generateStructure = true;
 
-    /*
     // Chargement des structures
-    std::vector<std::vector<Structure>> structures;
     for (int i = 0 ; i < nomStructure.size() ; i++){
         std::vector<Structure> structuresBiome;
         for (int j = 0 ; j < nomStructure[i].size() ; j++){
             std::ifstream fileStructure(nomStructure[i][j]);
-            structuresBiome.push_back(Chunk::readFile(fileStructure));
+            structuresBiome.push_back(this->readStructureFile(fileStructure));
             fileStructure.close();
         }
-        structures.push_back(structuresBiome);
+        this->structures.push_back(structuresBiome);
     }
-    */
-    //Chunk::setListeStructures(structures);
 
     this->biomeChart = false;
     this->mg = new MapGenerator(this->planeWidth, this->planeLength, this->seedTerrain, this->octave); 
@@ -36,6 +35,11 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
     unsigned char* dataPixelsCaveAC = stbi_load("../Textures/cave_AC.png", &widthHeightmap, &lengthHeightMap, &channels, 1);
     this->nbChunkTerrain = 1;
     this->buildPlanChunks(dataPixels, dataPixelsCaveAC, widthHeightmap, lengthHeightMap);
+    if (this->generateStructure){
+        this->buildStructures(dataPixels);
+    }
+    srand(time(NULL));
+    this->loadTerrain(); // On a besoin que tous les chunks soient générés avant de charger le terrain pour la première fois
     stbi_image_free(dataPixels);
     stbi_image_free(dataPixelsCaveAC);
 }
@@ -58,6 +62,21 @@ TerrainControler::~TerrainControler(){
     delete mg;
 }
 
+Structure TerrainControler::readStructureFile(std::ifstream &file){
+    Structure resStructure;
+    std::string line;
+
+    while (std::getline(file, line)) { 
+        std::istringstream flux(line);
+        BlockStructure bs;
+        for (int i = 0 ; i < 4 ; i++){
+            flux >> bs.infoBlock[i];
+        }
+        resStructure.blocks.push_back(bs);
+    }
+    return resStructure;
+}
+
 std::vector<Chunk*> TerrainControler::getListeChunks(){
     return this->listeChunks;
 }
@@ -77,10 +96,52 @@ void TerrainControler::buildPlanChunks(unsigned char* dataPixels, unsigned char*
             }
         }
     }
-    srand(time(NULL));
-
-    this->loadTerrain(); // On a besoin que tous les chunks soient générés avant de charger le terrain pour la première fois
 }
+
+void TerrainControler::buildStructures(unsigned char* dataPixels){
+    for (int j = 0 ; j < this->planeLength*CHUNK_SIZE ; j++){
+        for (int i = 0 ; i < this->planeWidth*CHUNK_SIZE ; i++){
+            int indInText = j*this->planeWidth*CHUNK_SIZE + i;
+            // Attention à bien en compte les chunks en hauteur qui ne sont pas utilisés pour la génération du terrain
+            int k = CHUNK_SIZE*(this->planeHeight-this->nbChunkTerrain) + ((int)dataPixels[indInText]) + 1;
+            if (rand()%100 == 0){
+                this->constructStructure(i,j,k);
+            }
+        }
+    }
+}
+
+void TerrainControler::constructStructure(int i, int j, int k){
+    // Peut être mettre un champ biomeID dans la classe Voxel au lieu de rechercher dans la biome chart ici
+    int biomeID = 0;
+    if (this->biomeChart){
+        FastNoise noiseGenerator = this->mg->getNoiseGenerator();
+        float precipitation = (noiseGenerator.GetNoise((i), (j))+1.0)/2.0;
+        float humidite = (noiseGenerator.GetNoise((i + 1000), (j + 1500))+1.0)/2.0;
+        biomeID = this->getBiomeID(precipitation,humidite); // On utilise la position x et z du block pour déterminer le biome
+    }
+
+    int indChunk;
+    glm::vec3 posChunk;
+    Structure to_build = structures[biomeID][rand()%structures[biomeID].size()]; // On construit l'une des structures disponibles 
+    for (int n = 0 ; n < to_build.blocks.size() ; n++){
+        int *infoBlock = to_build.blocks[n].infoBlock;
+        if (!(i+infoBlock[1]<0||j+infoBlock[3]<0||k+infoBlock[2]<0||i+infoBlock[1]>=this->planeWidth*CHUNK_SIZE||j+infoBlock[3]>=this->planeLength*CHUNK_SIZE||k+infoBlock[2]>=this->planeHeight*CHUNK_SIZE)){
+            indChunk = ((i+infoBlock[1])/32)*this->planeHeight*this->planeLength + ((j+infoBlock[3])/32)*this->planeHeight + ((k+infoBlock[2])/32);
+            posChunk = this->listeChunks[indChunk]->getPosition();
+            std::vector<Voxel*> getListe = this->listeChunks[indChunk]->getListeVoxels();
+            Voxel *actual_voxel = getListe[((k + infoBlock[2])%32)*1024 + ((j+infoBlock[3])%32) * 32 + ((i+infoBlock[1])%32)];
+            if (actual_voxel != nullptr){ // Si un voxel du terrain existe déjà à cet endroit, on remplace son id par celui du bloc de la structure
+                actual_voxel->setId(infoBlock[0]);
+            }else{ // Besoin de créer un nouveau block
+                Voxel *new_block = new Voxel(glm::vec3(posChunk[0]+(i+infoBlock[1])%32,posChunk[1]+(k+infoBlock[2])%32,posChunk[2]+(j+infoBlock[3])%32),infoBlock[0]); 
+                getListe[((k + infoBlock[2])%32)*1024 + ((j+infoBlock[3])%32) * 32 + ((i+infoBlock[1])%32)] = new_block;
+                this->listeChunks[indChunk]->setListeVoxels(getListe);
+            }
+        }
+    }
+}
+
 
 void TerrainControler::loadTerrain(){
     for (unsigned int i = 0 ; i < this->listeChunks.size() ; i++){
@@ -123,7 +184,9 @@ int* TerrainControler::getRefToOctave(){
 int* TerrainControler::getRefToNbChunkTerrain(){
     return &(this->nbChunkTerrain);
 }
-
+bool* TerrainControler::getRefToGenerateStructure(){
+    return &(this->generateStructure);
+}
 
 bool TerrainControler::computeTargetedBlock(glm::vec3 target, int& numLongueur, int& numHauteur, int& numProfondeur, int& indiceV, int& indiceChunk){
     int planeWidth = this->getPlaneWidth();
@@ -315,7 +378,6 @@ CelluleBiome TerrainControler::getCellBiomeFromBlock(CelluleBiome currentCell, f
 
 int TerrainControler::getBiomeID(float precipitation, float humidite){
     return this->getCellBiomeFromBlock(this->racineBiomeChart, precipitation, humidite).typeBiome;
-    //return 0;
 }
 
 void TerrainControler::setBiomeChart(CelluleBiome racineBiomeChart){

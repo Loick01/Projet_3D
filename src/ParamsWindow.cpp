@@ -19,6 +19,7 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
     this->planeHeight = terrainControler->getRefToPlaneHeight();
     this->seedTerrain = terrainControler->getRefToSeedTerrain();
     this->octave = terrainControler->getRefToOctave();
+    this->generateStructure = terrainControler->getRefToGenerateStructure();
     this->hitboxPlayer = player->getHitbox();
     this->init(window);
     this->useStyle();
@@ -94,6 +95,10 @@ void ParamsWindow::modifTerrain(){
     unsigned char* dataPixels = stbi_load("../Textures/terrain.png", &widthHeightmap, &lengthHeightmap, &channels, 1);
     unsigned char* dataPixelsCaveAC = stbi_load("../Textures/cave_AC.png", &widthHeightmap, &lengthHeightmap, &channels, 1);
     this->terrainControler->buildPlanChunks(dataPixels, dataPixelsCaveAC, widthHeightmap, lengthHeightmap);
+    if (*(this->generateStructure)){
+        this->terrainControler->buildStructures(dataPixels);
+    }
+    this->terrainControler->loadTerrain();
     stbi_image_free(dataPixels);
     stbi_image_free(dataPixelsCaveAC);
     this->hitboxPlayer->setPosition(glm::vec3(-0.5f,(terrainControler->getPlaneHeight())*32.0f,-0.5f));
@@ -390,6 +395,10 @@ void ParamsWindow::draw(){
             this->mg->setNbChunkTerrain(*(this->nbChunkTerrain));
             this->resetContinentalnessPlot();
         }
+
+        ImGui::Spacing();
+
+        ImGui::Checkbox("Placer les structures sur le terrain", this->generateStructure);
 
         if (ImGui::Button("Mettre à jour le terrain")){
             this->modifTerrain();

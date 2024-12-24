@@ -2,8 +2,6 @@
 
 #define CHUNK_SIZE 32
 
-// std::vector<std::vector<Structure>> Chunk::structures; // Permet d'éviter les erreurs de lien à la compilation
-
 Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, int nbTerrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, unsigned char* dataPixelsCaveAC, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc){
     this->pos_i = i;
     this->pos_j = j;
@@ -286,107 +284,8 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
         }
     }
     */
-
-    // On complète les trous de la génération (quand la différence de hauteur entre 2 blocs adjacents est > 1)
-    /*
-    for (int j=0;j<CHUNK_SIZE;j++){     
-        for (int i=0;i<CHUNK_SIZE;i++){ 
-            int indexVoxel = posLengthChunk*4 + posWidthChunk*4 + j*widthHeightmap*4 + i*4;
-
-            if(i<CHUNK_SIZE-1){
-                int indexRightNeighbour = posLengthChunk*4 + posWidthChunk*4 + j*widthHeightmap*4 + (i+1)*4;
-                if(dataPixels[indexVoxel]-dataPixels[indexRightNeighbour]>1){
-                    for(int k=dataPixels[indexVoxel]-1;k>dataPixels[indexRightNeighbour];k--){
-                        listeVoxels[k*1024+32*j+i]->setVisible(true);
-                    }
-                }
-            }
-            if(i>0){
-                int indexLeftNeighbour = posLengthChunk*4 + posWidthChunk*4 + j*widthHeightmap*4 + (i-1)*4;
-                if(dataPixels[indexVoxel]-dataPixels[indexLeftNeighbour]>1){
-                    for(int k=dataPixels[indexVoxel]-1;k>dataPixels[indexLeftNeighbour];k--){
-                        listeVoxels[k*1024+32*j+i]->setVisible(true);
-                    }
-                }
-            }
-            if(j<CHUNK_SIZE-1){
-                int indexFrontNeighbour = posLengthChunk*4 + posWidthChunk*4 + (j+1)*widthHeightmap*4 + i*4;
-                if(dataPixels[indexVoxel]-dataPixels[indexFrontNeighbour]>1){
-                    for(int k=dataPixels[indexVoxel]-1;k>dataPixels[indexFrontNeighbour];k--){
-                        listeVoxels[k*1024+32*j+i]->setVisible(true);
-                    }
-                }
-            }
-            if(j>0){
-                int indexBackNeighbour = posLengthChunk*4 + posWidthChunk*4 + (j-1)*widthHeightmap*4 + i*4;
-                if(dataPixels[indexVoxel]-dataPixels[indexBackNeighbour]>1){
-                    for(int k=dataPixels[indexVoxel]-1;k>dataPixels[indexBackNeighbour];k--){
-                        listeVoxels[k*1024+32*j+i]->setVisible(true);
-                    }
-                }
-            }
-        }
-    }
-    */
-
-
-    /*
-    // On génère les structures (seulement après avoir généré le terrain)
-    for (int k=0;k<CHUNK_SIZE;k++){
-        for (int j=0;j<CHUNK_SIZE;j++){     
-            for (int i=0;i<CHUNK_SIZE;i++){ 
-                // On s'assure que la structure pourra rentrer dans le chunk
-                int indInText = posLengthChunk*4 + posWidthChunk*4 + j*widthHeightmap*4 + i*4;
-                if (k == ((int)dataPixels[indInText])+1 && i>1 && i<CHUNK_SIZE-2 && j>1 && j<CHUNK_SIZE-2 && rand()%100 == 0){ // Pour l'instant, les structures apparaissent aléatoirement
-                    buildStructure(i,j,k);
-                }
-            }
-        }
-    }
-    */
 }
 
-/*
-Structure Chunk::readFile(std::ifstream &file){
-    Structure resStructure;
-    std::string line;
-
-    while (std::getline(file, line)) { 
-        std::istringstream flux(line);
-        BlockStructure bs;
-        for (int i = 0 ; i < 4 ; i++){
-            flux >> bs.infoBlock[i];
-        }
-        resStructure.blocks.push_back(bs);
-    }
-    return resStructure;
-}
-*/
-
-/*
-void Chunk::setListeStructures(std::vector<std::vector<Structure>> liste){
-    structures = liste;
-}
-*/
-
-/*
-void Chunk::buildStructure(int i, int j, int k){
-    Structure to_build = structures[this->ID][rand()%structures[this->ID].size()]; // On construit l'une des structures disponibles 
-    for (int n = 0 ; n < to_build.blocks.size() ; n++){
-        
-        int *infoBlock = to_build.blocks[n].infoBlock;
-        if (!(i+infoBlock[1]<0||j+infoBlock[3]<0||k+infoBlock[2]<0||i+infoBlock[1]>=CHUNK_SIZE||j+infoBlock[3]>=CHUNK_SIZE||k+infoBlock[2]>=CHUNK_SIZE)){
-            Voxel *actual_voxel = this->listeVoxels[(k + infoBlock[2])*1024 + ((j+infoBlock[3])%32) * 32 + ((i+infoBlock[1])%32)];
-            if (actual_voxel != nullptr){ // Si lun voxel du terrain est généré à cet endroit, on le supprime pour le remplacer par celui de la structure
-                delete actual_voxel;
-            }
-            Voxel *block = new Voxel(glm::vec3(this->position[0]+i+infoBlock[1],this->position[1]+k+infoBlock[2],this->position[2]+j+infoBlock[3]),infoBlock[0]); 
-            block->setVisible(true);
-            this->listeVoxels[(k + infoBlock[2])*1024 + ((j+infoBlock[3])%32) * 32 + ((i+infoBlock[1])%32)] = block;
-        }
-    }
-}
-*/
 void Chunk::addIndices(int* compteur){
     int decalage = ((*compteur)++)*4; // 4 sommets par face
     this->indices.push_back(decalage + 2);
