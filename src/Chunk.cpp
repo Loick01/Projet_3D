@@ -47,8 +47,8 @@ void Chunk::buildEditorChunk(){
     for (int k=0;k<CHUNK_SIZE;k++){
         for (int j=0;j<CHUNK_SIZE;j++){     
             for (int i=0;i<CHUNK_SIZE;i++){ 
-                if (i == CHUNK_SIZE/2 && j == CHUNK_SIZE/2 && k == CHUNK_SIZE/2){
-                    Voxel *vox = new Voxel(glm::vec3(0.0,0.0,0.0),STONE_BLOCK); 
+                if (i+j+k==0){
+                    Voxel *vox = new Voxel(glm::vec3(this->position.x + i, this->position.y + j, this->position.z + k),STONE_BLOCK); 
                     this->listeVoxels.push_back(vox);
                 }else{
                     this->listeVoxels.push_back(nullptr);

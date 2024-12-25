@@ -47,11 +47,12 @@ TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHei
 // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
 TerrainControler::TerrainControler(){
     this->listeChunks.clear();
-    // On est obligé de définir les 3 valeurs ci-dessous
+    // Par défaut, un seul chunk
     this->planeWidth = 1;
     this->planeLength = 1; 
     this->planeHeight = 1;
     this->buildEditorChunk();
+    this->loadTerrain();
     this->mg = new MapGenerator(); // Pour ne pas poser problème avec le destructeur, on crée un MapGenerator vide 
 }
 
@@ -150,11 +151,18 @@ void TerrainControler::loadTerrain(){
 }
 
 void TerrainControler::buildEditorChunk(){
-    // Le terrain dans le mode éditeur est composé d'un unique chunk
-    //this->listeChunks.clear();
-    Chunk *c = new Chunk(glm::vec3(-16.0,-16.0,-16.0)); 
-    c->loadChunk();
-    this->listeChunks.push_back(c);
+    for (int i = 0 ; i < this->listeChunks.size() ; i++){
+        delete this->listeChunks[i];
+    }
+    this->listeChunks.clear();
+    for (int i = 0 ; i < this->planeWidth ; i++){
+        for (int j = 0 ; j < this->planeLength ; j++){
+            for (int k = 0 ; k < this->planeHeight ; k++){
+                Chunk *c = new Chunk(glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32));
+                this->listeChunks.push_back(c);
+            }
+        }
+    }
 }
 
 int TerrainControler::getPlaneWidth(){
@@ -276,7 +284,7 @@ void TerrainControler::drawTerrain(){
     }
 }
 
-/*
+// A revoir, pas encore adapté aux structures multi-chunk
 void TerrainControler::saveStructure(std::string filePath){
     filePath = "../Structures/" + filePath + ".txt";
     std::ofstream fileStructure(filePath);
@@ -297,7 +305,6 @@ void TerrainControler::saveStructure(std::string filePath){
     }
     fileStructure.close();
 }
-*/
 
 bool TerrainControler::checkHoldLeftClick(glm::vec3 camera_position, glm::vec3 camera_target, float deltaTime, bool modeJeu, GLuint programID){
     if (this->mouseLeftClickHold){

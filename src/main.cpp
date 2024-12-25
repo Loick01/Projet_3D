@@ -18,12 +18,12 @@ bool isImGuiShow = true;
 bool switchToEditor = false;
 
 // Caméra
-glm::vec3 camera_position  = glm::vec3(0.0f, 5.0f, 5.0f);
+glm::vec3 camera_position;
 glm::vec3 camera_target = glm::vec3(1.0f,0.0f,-1.0f);
 glm::vec3 camera_up = glm::vec3(0.0f, 1.0f,  0.0f);
 
 bool cameraOrbitale = false;
-bool cameraLibre = false; // Caméra libre par défaut
+bool cameraLibre = false;
 bool cameraMouseLibre = true;
 bool cameraMousePlayer = false;
 int speedCam = 200;
@@ -104,31 +104,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     // Pour sortir de la caméra à la souris et avoir le curseur
     if (key == GLFW_KEY_E && action == GLFW_PRESS){
-        if (!switchToEditor){ 
-            if (cameraMousePlayer){
-                cameraMouseLibre = false;
-                cameraMousePlayer = false;
-                cameraOrbitale = false;
-                cameraLibre = true;
-            }else{
-                cameraMouseLibre = false;
-                cameraMousePlayer = true;
-                cameraOrbitale = false;
-                cameraLibre = false;
-            }
-        }else{
-            if (cameraMouseLibre){
-                cameraMouseLibre = false;
-                cameraMousePlayer = false;
-                cameraOrbitale = false;
-                cameraLibre = true;
-            }else{
-                cameraMouseLibre = true;
-                cameraMousePlayer = false;
-                cameraOrbitale = false;
-                cameraLibre = false;
-            }
-        }
+            cameraMouseLibre = !cameraMouseLibre;
+            cameraMousePlayer = false;
+            cameraOrbitale = false;
+            cameraLibre = !cameraMouseLibre;
     }
 }
 
@@ -396,8 +375,9 @@ int main(){
     nomStructure.push_back(structureBiome1);
     nomStructure.push_back(structureBiome2);
 
-	// Les 2 premiers paramètres du constructeur de TerrainControleur sont la taille du terrain (en nombre de chunk), en longueur et en profondeur (ici 3x3)
-    terrainControler = new TerrainControler(2, 2, 3, 3, 1000, 4, nomStructure);
+    terrainControler = new TerrainControler(2, 2, 2, 3, 1000, 4, nomStructure);
+    camera_position = glm::vec3(0.0f, terrainControler->getPlaneHeight()*32.0f, 0.0f);
+    
     player = new Player(glm::vec3(-0.5f,(terrainControler->getPlaneHeight())*32.0f,-0.5f), 1.8f, 0.6f, 6.0f, 1.5f); // Le joueur fait 1.8 bloc de haut, et 0.6 bloc de large et de long
     hitboxPlayer = player->getHitbox();
 
@@ -614,6 +594,7 @@ int main(){
                 cameraMousePlayer = false;
                 cameraOrbitale = false;
                 cameraLibre = false;
+                camera_position = glm::vec3(0.0,0.0,3.0);
                 
                 /*
                 for (int i = 0 ; i < listeEntity.size() ; i++){
