@@ -122,15 +122,19 @@ void TerrainControler::constructStructure(int i, int j, int k){
         biomeID = this->getBiomeID(precipitation,humidite); // On utilise la position x et z du block pour déterminer le biome
     }
 
-    int indChunk;
+    int indChunk = -1;
     glm::vec3 posChunk;
     Structure to_build = structures[biomeID][rand()%structures[biomeID].size()]; // On construit l'une des structures disponibles 
+    std::vector<Voxel*> getListe;
     for (int n = 0 ; n < to_build.blocks.size() ; n++){
         int *infoBlock = to_build.blocks[n].infoBlock;
         if (!(i+infoBlock[1]<0||j+infoBlock[3]<0||k+infoBlock[2]<0||i+infoBlock[1]>=this->planeWidth*CHUNK_SIZE||j+infoBlock[3]>=this->planeLength*CHUNK_SIZE||k+infoBlock[2]>=this->planeHeight*CHUNK_SIZE)){
-            indChunk = ((i+infoBlock[1])/32)*this->planeHeight*this->planeLength + ((j+infoBlock[3])/32)*this->planeHeight + ((k+infoBlock[2])/32);
-            posChunk = this->listeChunks[indChunk]->getPosition();
-            std::vector<Voxel*> getListe = this->listeChunks[indChunk]->getListeVoxels();
+            int newIDChunk = ((i+infoBlock[1])/32)*this->planeHeight*this->planeLength + ((j+infoBlock[3])/32)*this->planeHeight + ((k+infoBlock[2])/32);
+            if (indChunk != newIDChunk){ // On ne met à jour les informations que si c'est nécessaire
+                indChunk = newIDChunk;
+                posChunk = this->listeChunks[indChunk]->getPosition();
+                getListe = this->listeChunks[indChunk]->getListeVoxels();
+            }
             Voxel *actual_voxel = getListe[((k + infoBlock[2])%32)*1024 + ((j+infoBlock[3])%32) * 32 + ((i+infoBlock[1])%32)];
             if (actual_voxel != nullptr){ // Si un voxel du terrain existe déjà à cet endroit, on remplace son id par celui du bloc de la structure
                 actual_voxel->setId(infoBlock[0]);
@@ -158,7 +162,7 @@ void TerrainControler::buildEditorChunk(){
     for (int i = 0 ; i < this->planeWidth ; i++){
         for (int j = 0 ; j < this->planeLength ; j++){
             for (int k = 0 ; k < this->planeHeight ; k++){
-                Chunk *c = new Chunk(glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32));
+                Chunk *c = new Chunk(glm::vec3((this->planeWidth*32)/2*(-1.f) + i*32, k*32, (this->planeLength*32)/2*(-1.f) + j*32), i+j+k==0);
                 this->listeChunks.push_back(c);
             }
         }
@@ -284,7 +288,6 @@ void TerrainControler::drawTerrain(){
     }
 }
 
-// A revoir, pas encore adapté aux structures multi-chunk
 void TerrainControler::saveStructure(std::string filePath){
     filePath = "../Structures/" + filePath + ".txt";
     std::ofstream fileStructure(filePath);
@@ -293,16 +296,24 @@ void TerrainControler::saveStructure(std::string filePath){
         std::cerr << "Erreur : impossible d'ouvrir le fichier. Vérifiez le nom donné au fichier\n";
     }
 
-    // On récupère l'unique chunk du terrain (car on est en mode édition)
-    Chunk *c = this->listeChunks[0];
-    std::vector<Voxel*> voxelsToSave = c->getListeVoxels();
-    for (int i = 0 ; i < voxelsToSave.size() ; i++){
-        Voxel *v = voxelsToSave[i];
-        if (v != nullptr){
-            // Attention à bien mettre un espace à la fin, avant le retour à la ligne
-            fileStructure << v->getID() << " " << floor(v->getBackBottomLeftCorner()[0]) << " " << floor(v->getBackBottomLeftCorner()[1]) << " " << floor(v->getBackBottomLeftCorner()[2]) << " \n";
+    for (int n_chunk_height = 0 ; n_chunk_height < this->planeHeight ; n_chunk_height++){
+        for (int n_chunk_length = 0 ; n_chunk_length < this->planeLength ; n_chunk_length++){
+            for (int n_chunk_width = 0 ; n_chunk_width < this->planeWidth ; n_chunk_width++){
+                std::vector<Voxel*> voxelsToSave = this->listeChunks[n_chunk_width*this->planeHeight*this->planeLength + n_chunk_length*this->planeHeight + n_chunk_height]->getListeVoxels();
+                for (int i = 0 ; i < voxelsToSave.size() ; i++){
+                    Voxel *v = voxelsToSave[i];
+                    if (v != nullptr){
+                        int dec_x = -16 + i%32 + n_chunk_width*CHUNK_SIZE; // Décalage en x
+                        int dec_y = -16 + (i/32)%32 + n_chunk_height*CHUNK_SIZE; // Décalage en y
+                        int dec_z = -16 + i/(32*32) + n_chunk_length*CHUNK_SIZE; // Décalage en z
+                        // Attention à bien mettre un espace à la fin, avant le retour à la ligne
+                        fileStructure << v->getID() << " " << dec_x << " " << dec_y << " " << dec_z << " \n";
+                    }
+                }
+            }
         }
     }
+
     fileStructure.close();
 }
 

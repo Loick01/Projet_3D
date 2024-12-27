@@ -594,7 +594,7 @@ int main(){
                 cameraMousePlayer = false;
                 cameraOrbitale = false;
                 cameraLibre = false;
-                camera_position = glm::vec3(0.0,0.0,3.0);
+                camera_position = glm::vec3(0.0,2.0,0.0);
                 
                 /*
                 for (int i = 0 ; i < listeEntity.size() ; i++){

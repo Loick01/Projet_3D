@@ -28,9 +28,9 @@ Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, int nbTerrainChunk, 
     }
 }
 
-Chunk::Chunk(glm::vec3 position){
+Chunk::Chunk(glm::vec3 position, bool referenceChunk){
     this->position = position;
-    this->buildEditorChunk();
+    this->buildEditorChunk(referenceChunk);
 }
 
 Chunk::~Chunk(){
@@ -42,13 +42,13 @@ Chunk::~Chunk(){
     glDeleteBuffers(1, &(this->elementbuffer));
 }
 
-void Chunk::buildEditorChunk(){
+void Chunk::buildEditorChunk(bool referenceChunk){
     this->listeVoxels.clear();
     for (int k=0;k<CHUNK_SIZE;k++){
         for (int j=0;j<CHUNK_SIZE;j++){     
             for (int i=0;i<CHUNK_SIZE;i++){ 
-                if (i+j+k==0){
-                    Voxel *vox = new Voxel(glm::vec3(this->position.x + i, this->position.y + j, this->position.z + k),STONE_BLOCK); 
+                if (i==CHUNK_SIZE/2 && j==CHUNK_SIZE/2 && k==CHUNK_SIZE/2){ // On met juste un block au milieu du chunk
+                    Voxel *vox = new Voxel(glm::vec3(this->position.x + i, this->position.y + j, this->position.z + k), (referenceChunk ? DIAMOND_ORE : STONE_BLOCK)); 
                     this->listeVoxels.push_back(vox);
                 }else{
                     this->listeVoxels.push_back(nullptr);
@@ -347,7 +347,7 @@ void Chunk::loadChunk(TerrainControler* tc){
             }else{
                 // Il faut aller le chunk en dessous (pos_k-1)
                 Chunk *cnk = tc->getChunkAt(this->pos_i,this->pos_k-1,this->pos_j);
-                if (cnk != nullptr && cnk->getListeVoxels()[i+(32*32*31)] == nullptr){
+                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i+(32*32*31)] == nullptr)){
                     addIndices(&compteur);
                     this->objectIDs.push_back(3);
                     this->faceIDs.push_back(0);
@@ -368,7 +368,7 @@ void Chunk::loadChunk(TerrainControler* tc){
             }else{
                 // Il faut aller le chunk au dessus (pos_k+1)
                 Chunk *cnk = tc->getChunkAt(this->pos_i,this->pos_k+1,this->pos_j);
-                if (cnk != nullptr && cnk->getListeVoxels()[i-(32*32*31)] == nullptr){
+                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i-(32*32*31)] == nullptr)){
                     addIndices(&compteur);
                     this->objectIDs.push_back(3);
                     this->faceIDs.push_back(1);
@@ -389,7 +389,7 @@ void Chunk::loadChunk(TerrainControler* tc){
             }else{
                 // Il faut aller le chunk derrière (pos_j-1)
                 Chunk *cnk = tc->getChunkAt(this->pos_i,this->pos_k,this->pos_j-1);
-                if (cnk != nullptr && cnk->getListeVoxels()[i+(32*31)] == nullptr){
+                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i+(32*31)] == nullptr)){
                     addIndices(&compteur);
                     this->objectIDs.push_back(3);
                     this->faceIDs.push_back(2);
@@ -410,7 +410,7 @@ void Chunk::loadChunk(TerrainControler* tc){
             }else{
                 // Il faut aller le chunk devant (pos_j+1)
                 Chunk *cnk = tc->getChunkAt(this->pos_i,this->pos_k,this->pos_j+1);
-                if (cnk != nullptr && cnk->getListeVoxels()[i-(32*31)] == nullptr){
+                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i-(32*31)] == nullptr)){
                     addIndices(&compteur);
                     this->objectIDs.push_back(3);
                     this->faceIDs.push_back(3);
@@ -431,7 +431,7 @@ void Chunk::loadChunk(TerrainControler* tc){
             }else{
                 // Il faut aller le chunk à gauche (pos_i-1)
                 Chunk *cnk = tc->getChunkAt(this->pos_i-1,this->pos_k,this->pos_j);
-                if (cnk != nullptr && cnk->getListeVoxels()[i+31] == nullptr){
+                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i+31] == nullptr)){
                     addIndices(&compteur);
                     this->objectIDs.push_back(3);
                     this->faceIDs.push_back(4);
@@ -452,7 +452,7 @@ void Chunk::loadChunk(TerrainControler* tc){
             }else{
                 // Il faut aller le chunk à droite (pos_i+1)
                 Chunk *cnk = tc->getChunkAt(this->pos_i+1,this->pos_k,this->pos_j);
-                if (cnk != nullptr && cnk->getListeVoxels()[i-31] == nullptr){
+                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i-31] == nullptr)){
                     addIndices(&compteur);
                     this->objectIDs.push_back(3);
                     this->faceIDs.push_back(5);
