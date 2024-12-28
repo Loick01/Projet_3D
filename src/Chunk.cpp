@@ -88,26 +88,34 @@ void Chunk::buildCaveChunk(int hauteurChunk, unsigned char* dataPixelsCaveAC, in
         }
     }
 
-    // On génère la grotte (pour l'instant au chunk le plus bas, et sur 5 blocs de haut)
-    // Penser à étendre la génération des grottes sur des chunks avec des hauteurs différentes
-    if (hauteurChunk == 0){
-        for (int j=0;j<CHUNK_SIZE;j++){
-            for (int i=0;i<CHUNK_SIZE;i++){
-                int indInText = posLengthChunk + posWidthChunk + j*widthHeightmap + i;
-                unsigned char heightBlockCave = dataPixelsCaveAC[indInText];
-                if (heightBlockCave>0){
-                    for (int k = heightBlockCave ; k < heightBlockCave+5 ; k++){
-                        if (k < 32){
-                            unsigned int vox_index = k*CHUNK_SIZE*CHUNK_SIZE + j*CHUNK_SIZE + i;
-                            Voxel *vox = this->listeVoxels[vox_index];
-                            delete vox;
-                            this->listeVoxels[vox_index] = nullptr;
-                        }
+    // Grotte sur 5 blocs de haut pour l'instant
+    for (int j=0;j<CHUNK_SIZE;j++){
+        for (int i=0;i<CHUNK_SIZE;i++){
+            int indInText = posLengthChunk + posWidthChunk + j*widthHeightmap + i;
+            unsigned char heightBlockCave = dataPixelsCaveAC[indInText];
+            if (heightBlockCave>hauteurChunk*CHUNK_SIZE+(hauteurChunk>0?-1:0) && heightBlockCave<(hauteurChunk+1)*CHUNK_SIZE){
+                for (int k = heightBlockCave ; k < heightBlockCave+5 ; k++){
+                    if (k < (hauteurChunk+1)*CHUNK_SIZE){
+                        unsigned int vox_index = (k%CHUNK_SIZE)*CHUNK_SIZE*CHUNK_SIZE + j*CHUNK_SIZE + i;
+                        Voxel *vox = this->listeVoxels[vox_index];
+                        delete vox;
+                        this->listeVoxels[vox_index] = nullptr;
                     }
+                }
+            // Attention à gérer le cas où la grotte déborde sur 2 chunks en hauteur
+            }else if(hauteurChunk>0 && heightBlockCave>=hauteurChunk*CHUNK_SIZE-4 && heightBlockCave<hauteurChunk*CHUNK_SIZE){
+                int startHeight = hauteurChunk*CHUNK_SIZE;
+                int diff_height = 5-(startHeight - heightBlockCave);
+                for (int k = startHeight ; k < startHeight+diff_height ; k++){
+                    unsigned int vox_index = (k%CHUNK_SIZE)*CHUNK_SIZE*CHUNK_SIZE + j*CHUNK_SIZE + i;
+                    Voxel *vox = this->listeVoxels[vox_index];
+                    delete vox;
+                    this->listeVoxels[vox_index] = nullptr;
                 }
             }
         }
     }
+
 }
 
 void Chunk::buildCheeseChunk(int a, int b, int c, FastNoise noiseGenerator){

@@ -435,7 +435,8 @@ void ParamsWindow::draw(){
 
         ImGui::Spacing();
 
-        ImPlot::SetNextAxisLimits(ImAxis_Y1, 0, *(this->nbChunkTerrain)*32.0 - 1.0, ImGuiCond_Always);
+        float max_value_continentalness = *(this->nbChunkTerrain)*32.0 - 1.0;
+        ImPlot::SetNextAxisLimits(ImAxis_Y1, 0, max_value_continentalness, ImGuiCond_Always);
 
         if (ImPlot::BeginPlot("Continentalness")) {
                 ImPlot::SetupAxis(ImAxis_X1, "Terrain simplex values", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
@@ -496,10 +497,10 @@ void ParamsWindow::draw(){
         }
         ImGui::SetNextItemWidth(250.0f);
         ImGui::SameLine();
-        ImGui::SliderFloat("First Continentalness", &(this->continentalness_values[0]), 0.0, *(this->nbChunkTerrain)*32.0 - 1.0);
+        ImGui::SliderFloat("First Continentalness", &(this->continentalness_values[0]), 0.0, max_value_continentalness);
         ImGui::SetNextItemWidth(250.0f);
         ImGui::SameLine();
-        ImGui::SliderFloat("Last Continentalness", &(this->continentalness_values.back()), 0.0, *(this->nbChunkTerrain)*32.0 - 1.0);
+        ImGui::SliderFloat("Last Continentalness", &(this->continentalness_values.back()), 0.0, max_value_continentalness);
 
         ImGui::Spacing();
 
@@ -531,7 +532,9 @@ void ParamsWindow::draw(){
 
         ImGui::Spacing();
 
-        ImPlot::SetNextAxisLimits(ImAxis_Y1, 1, 31); // Plus tard, faire en sorte que cet axe s'adapte en fonction du nombre de chunk utilisable réellement possible
+        float max_value_cave = (*this->planeHeight - *this->nbChunkTerrain)*32.0 - 1.0;
+        // ImPlot::SetNextAxisLimits(ImAxis_Y1, 1, 31); // Plus tard, faire en sorte que cet axe s'adapte en fonction du nombre de chunk utilisable réellement possible
+        ImPlot::SetNextAxisLimits(ImAxis_Y1, 1, max_value_cave, ImGuiCond_Always);
 
         if (ImPlot::BeginPlot("Cave")) {
                 ImPlot::SetupAxis(ImAxis_X1, "Cave simplex values", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
@@ -593,10 +596,10 @@ void ParamsWindow::draw(){
 
         ImGui::SetNextItemWidth(250.0f);
         ImGui::SameLine();
-        ImGui::SliderFloat("First Cave Height Value", &(this->cave_height_values[0]), 1.0, 31.0);
+        ImGui::SliderFloat("First Cave Height Value", &(this->cave_height_values[0]), 1.0, max_value_cave);
         ImGui::SetNextItemWidth(250.0f);
         ImGui::SameLine();
-        ImGui::SliderFloat("Last Cave Height Value", &(this->cave_height_values.back()), 1.0, 31.0);
+        ImGui::SliderFloat("Last Cave Height Value", &(this->cave_height_values.back()), 1.0, max_value_cave);
     }
 
     ImGui::End();
