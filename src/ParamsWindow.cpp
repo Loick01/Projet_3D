@@ -175,6 +175,7 @@ void ParamsWindow::divisionCell(CelluleBiome* tc){
     }
 }
 
+// Normalement il n'y a plus d'erreur dans la reconstruction de la biome chart
 void ParamsWindow::rebuildBiomeChart(CelluleBiome* currentCell, std::string next_word, int startPos, bool isInCC){
     this->divisionCell(currentCell);
     bool isFirst = true;
@@ -186,6 +187,8 @@ void ParamsWindow::rebuildBiomeChart(CelluleBiome* currentCell, std::string next
             this->rebuildBiomeChart(&currentCell->cs[nc-'0'], next_word, i+1, false);
         }else if (nc == '/' && !isFirst && isIn){
             isIn = false;
+            ++count_enter;
+        }else if (nc == '/' && !isFirst){
             ++count_enter;
         }else if (nc == '\\'){
             --count_enter;
