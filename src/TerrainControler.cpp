@@ -218,25 +218,71 @@ bool TerrainControler::computeTargetedBlock(glm::vec3 target, int& numLongueur, 
     }
 }
 
+// http://www.cse.yorku.ca/~amana/research/grid.pdf
+std::vector<glm::vec3> TerrainControler::detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint){
+    std::vector<glm::vec3> blocks;
+
+    int x = static_cast<int>(std::floor(startPoint.x));
+    int y = static_cast<int>(std::floor(startPoint.y));
+    int z = static_cast<int>(std::floor(startPoint.z));
+    int xEnd = static_cast<int>(std::floor(endPoint.x));
+    int yEnd = static_cast<int>(std::floor(endPoint.y));
+    int zEnd = static_cast<int>(std::floor(endPoint.z));
+
+    float dx = endPoint.x - startPoint.x;
+    float dy = endPoint.y - startPoint.y;
+    float dz = endPoint.z - startPoint.z;
+
+    int sx = (dx > 0) ? 1 : -1;
+    int sy = (dy > 0) ? 1 : -1;
+    int sz = (dz > 0) ? 1 : -1;
+
+    dx = std::abs(dx);
+    dy = std::abs(dy);
+    dz = std::abs(dz);
+
+    float tMaxX = (dx > 0) ? (sx > 0 ? (std::floor(startPoint.x) + 1 - startPoint.x) : (startPoint.x - std::floor(startPoint.x))) / dx : std::numeric_limits<float>::infinity();
+    float tMaxY = (dy > 0) ? (sy > 0 ? (std::floor(startPoint.y) + 1 - startPoint.y) : (startPoint.y - std::floor(startPoint.y))) / dy : std::numeric_limits<float>::infinity();
+    float tMaxZ = (dz > 0) ? (sz > 0 ? (std::floor(startPoint.z) + 1 - startPoint.z) : (startPoint.z - std::floor(startPoint.z))) / dz : std::numeric_limits<float>::infinity();
+
+    float tDeltaX = (dx > 0) ? 1 / dx : std::numeric_limits<float>::infinity();
+    float tDeltaY = (dy > 0) ? 1 / dy : std::numeric_limits<float>::infinity();
+    float tDeltaZ = (dz > 0) ? 1 / dz : std::numeric_limits<float>::infinity();
+
+    blocks.push_back(glm::vec3(x, y, z));
+    while (x != xEnd || y != yEnd || z != zEnd) {
+        if (tMaxX < tMaxY) {
+            if (tMaxX < tMaxZ) {
+                tMaxX += tDeltaX;
+                x += sx;
+            } else {
+                tMaxZ += tDeltaZ;
+                z += sz;
+            }
+        } else {
+            if (tMaxY < tMaxZ) {
+                tMaxY += tDeltaY;
+                y += sy;
+            } else {
+                tMaxZ += tDeltaZ;
+                z += sz;
+            }
+        }
+        blocks.push_back(glm::vec3(x, y, z));
+    }
+
+    return blocks;
+}
+
 LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position){
-    glm::vec3 originPoint = camera_position;
-    glm::vec3 direction = normalize(camera_target);
+    std::vector<glm::vec3> targetedBlocks = detectTargetBlock(camera_position, camera_position + (float)RANGE*normalize(camera_target));
 
-    //for (int k = 1 ; k < RANGE+1 ; k++){ // Trouver une meilleure manière pour détecter le bloc à casser
-    for (float k = 0.1 ; k < RANGE+1. ; k+=0.1){ // C'est mieux mais pas parfait
-        glm::vec3 target = originPoint + (float)k*direction;
-
+    for (int i = 0 ; i < targetedBlocks.size() ; i++){
         int numLongueur, numHauteur, numProfondeur, indiceV, indiceChunk;
-        std::vector<Voxel*> listeVoxels;
-        bool blockIsTargeted = this->computeTargetedBlock(target,numLongueur,numHauteur,numProfondeur,indiceV,indiceChunk);
-
-        if (!blockIsTargeted){
-            continue;
-        }else{
+        bool blockIsTargeted = this->computeTargetedBlock(targetedBlocks[i],numLongueur,numHauteur,numProfondeur,indiceV,indiceChunk);
+        if (blockIsTargeted){
             std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
-            if (listeVoxels[indiceV] == nullptr){
-                continue;
-            }else if (listeVoxels[indiceV]->getID() != 5){ // Le bloc de bedrock est incassable (donc attention si on en place un)
+            if (listeVoxels[indiceV] != nullptr && listeVoxels[indiceV]->getID() != 5){ // Bloc de bedrock est incassable
                 return {indiceV, indiceChunk, numLongueur, numProfondeur, numHauteur, listeVoxels[indiceV]->getIdInChunk()};
             }
         }
