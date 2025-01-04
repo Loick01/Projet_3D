@@ -201,10 +201,6 @@ bool* TerrainControler::getRefToGenerateStructure(){
 }
 
 bool TerrainControler::computeTargetedBlock(glm::vec3 target, int& numLongueur, int& numHauteur, int& numProfondeur, int& indiceV, int& indiceChunk){
-    int planeWidth = this->getPlaneWidth();
-    int planeLength = this->getPlaneLength();
-    int planeHeight = this->getPlaneHeight();
-
     numLongueur = floor(target[0]) + 16*planeWidth;
     numHauteur = floor(target[1]);
     numProfondeur = floor(target[2]) + 16*planeLength;
@@ -219,9 +215,7 @@ bool TerrainControler::computeTargetedBlock(glm::vec3 target, int& numLongueur, 
 }
 
 // http://www.cse.yorku.ca/~amana/research/grid.pdf
-std::vector<glm::vec3> TerrainControler::detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint){
-    std::vector<glm::vec3> blocks;
-
+LocalisationBlock TerrainControler::detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint){
     int x = static_cast<int>(std::floor(startPoint.x));
     int y = static_cast<int>(std::floor(startPoint.y));
     int z = static_cast<int>(std::floor(startPoint.z));
@@ -249,45 +243,67 @@ std::vector<glm::vec3> TerrainControler::detectTargetBlock(glm::vec3 startPoint,
     float tDeltaY = (dy > 0) ? 1 / dy : std::numeric_limits<float>::infinity();
     float tDeltaZ = (dz > 0) ? 1 / dz : std::numeric_limits<float>::infinity();
 
-    blocks.push_back(glm::vec3(x, y, z));
+    int numLongueur, numHauteur, numProfondeur, indiceV, indiceChunk;
+    int axisFace = 0;
+    if (this->computeTargetedBlock(glm::vec3(x,y,z), numLongueur, numHauteur, numProfondeur, indiceV, indiceChunk)){
+        std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
+        if (listeVoxels[indiceV] != nullptr){
+            if (tMaxX < tMaxY && tMaxX < tMaxZ) {
+                axisFace = (-1)*sx; // Face visé parallèle au plan YZ
+            } else if (tMaxY < tMaxZ) {
+                axisFace = (-2)*sy; // Face visé parallèle au plan XZ
+            } else {
+                axisFace = (-3)*sz; // Face visé parallèle au plan XY
+            }
+            return {indiceV, indiceChunk, numLongueur, numProfondeur, numHauteur, listeVoxels[indiceV]->getIdInChunk(),axisFace};
+        }
+    }
+
     while (x != xEnd || y != yEnd || z != zEnd) {
         if (tMaxX < tMaxY) {
             if (tMaxX < tMaxZ) {
                 tMaxX += tDeltaX;
                 x += sx;
+                axisFace = (-1)*sx; // Face visé parallèle au plan YZ
             } else {
                 tMaxZ += tDeltaZ;
                 z += sz;
+                axisFace = (-3)*sz; // Face visé parallèle au plan XY
             }
         } else {
             if (tMaxY < tMaxZ) {
                 tMaxY += tDeltaY;
                 y += sy;
+                axisFace = (-2)*sy; // Face visé parallèle au plan XZ
             } else {
                 tMaxZ += tDeltaZ;
                 z += sz;
+                axisFace = (-3)*sz; // Face visé parallèle au plan XY
             }
         }
-        blocks.push_back(glm::vec3(x, y, z));
+        if (this->computeTargetedBlock(glm::vec3(x,y,z), numLongueur, numHauteur, numProfondeur, indiceV, indiceChunk)){
+            std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
+            if (listeVoxels[indiceV] != nullptr){
+                return {indiceV, indiceChunk, numLongueur, numProfondeur, numHauteur, listeVoxels[indiceV]->getIdInChunk(),axisFace};
+            }
+        }
     }
-
-    return blocks;
+    return {-1,-1,-1,-1,-1,-1,0};
 }
 
 LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position){
-    std::vector<glm::vec3> targetedBlocks = detectTargetBlock(camera_position, camera_position + (float)RANGE*normalize(camera_target));
+    LocalisationBlock blockIsTargeted = detectTargetBlock(camera_position, camera_position + (float)RANGE*normalize(camera_target));
 
-    for (int i = 0 ; i < targetedBlocks.size() ; i++){
-        int numLongueur, numHauteur, numProfondeur, indiceV, indiceChunk;
-        bool blockIsTargeted = this->computeTargetedBlock(targetedBlocks[i],numLongueur,numHauteur,numProfondeur,indiceV,indiceChunk);
-        if (blockIsTargeted){
-            std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
-            if (listeVoxels[indiceV] != nullptr && listeVoxels[indiceV]->getID() != 5){ // Bloc de bedrock est incassable
-                return {indiceV, indiceChunk, numLongueur, numProfondeur, numHauteur, listeVoxels[indiceV]->getIdInChunk()};
-            }
+    // Ici, on vérifie si le bloc solide visé n'a pas un comportement particulier
+    // Si aucun bloc n'est particulier, on pourrait retourner directement blockIsTargeted
+    // Ici la bedrock est incassable
+    if (blockIsTargeted.indiceVoxel != -1){
+        std::vector<Voxel*> listeVoxels = this->listeChunks[blockIsTargeted.indiceChunk]->getListeVoxels();
+        if (listeVoxels[blockIsTargeted.indiceVoxel] != nullptr && listeVoxels[blockIsTargeted.indiceVoxel]->getID() != 5){
+            return blockIsTargeted;
         }
     }
-    return {-1,-1,-1,-1,-1,-1};
+    return {-1,-1,-1,-1,-1,-1,0};
 }
 
 void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir testé (au minimum) si lb.indiceVoxel != -1 avant d'appeler cette fonction
@@ -300,31 +316,36 @@ void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir
 }
 
 bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock){
-    glm::vec3 originPoint = camera_position;
-    glm::vec3 direction = normalize(camera_target);
-    float k = 3.0; // Pour l'instant le joueur ne peut poser un block qu'à cette distance
-    glm::vec3 target = originPoint + (float)k*direction;
+    LocalisationBlock blockIsTargeted = detectTargetBlock(camera_position, camera_position + (float)RANGE*normalize(camera_target));
+    if (blockIsTargeted.indiceVoxel != -1){ // Vérifie si un bloc est bien visé
+        // On pose un bloc à droite du bloc visé
+        LocalisationBlock newBlock = blockIsTargeted;
+        int val = blockIsTargeted.targetedFace;
+        if (abs(val) == 1){
+            newBlock.numLongueur += val > 0 ? 1 : -1;
+        }else if (abs(val) == 2){
+            newBlock.numHauteur += val > 0 ? 1 : -1;
+        }else if (abs(val) == 3){
+            newBlock.numProfondeur += val > 0 ? 1 : -1;
+        }
 
-    int numLongueur, numHauteur, numProfondeur, indiceV, indiceChunk;
-    std::vector<Voxel*> listeVoxels;
-    bool blockIsTargeted = this->computeTargetedBlock(target,numLongueur,numHauteur,numProfondeur,indiceV,indiceChunk);
+        if (!(newBlock.numLongueur < 0 || newBlock.numLongueur > (planeWidth*32)-1 || newBlock.numHauteur < 0 || newBlock.numHauteur > (planeHeight*32)-1 || newBlock.numProfondeur < 0 || newBlock.numProfondeur > (planeLength*32)-1)){
+            // Le chunk du nouveau bloc peut être différent de celui visé, donc on est obligé de recalculer
+            newBlock.indiceVoxel = (newBlock.numHauteur%32)*1024 + (newBlock.numProfondeur%32) * 32 + (newBlock.numLongueur%32);
+            newBlock.indiceChunk = (newBlock.numLongueur/32) * planeLength * planeHeight + (newBlock.numProfondeur/32) * planeHeight + newBlock.numHauteur/32 ;
 
-    if (!blockIsTargeted){
-        return false;
-    }else{
-        std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
-        if (listeVoxels[indiceV] == nullptr){
-            glm::vec3 posChunk = this->listeChunks[indiceChunk]->getPosition();
-            Voxel* vox = new Voxel(glm::vec3(posChunk[0]+numLongueur%32,posChunk[1]+numHauteur%32,posChunk[2]+numProfondeur%32),typeBlock);
-            listeVoxels[indiceV] = vox;
+            std::vector<Voxel*> listeVoxels = this->listeChunks[newBlock.indiceChunk]->getListeVoxels();
+            if (listeVoxels[newBlock.indiceVoxel] == nullptr){
+                glm::vec3 posChunk = this->listeChunks[newBlock.indiceChunk]->getPosition();
+                Voxel* vox = new Voxel(glm::vec3(posChunk[0]+newBlock.numLongueur%32,posChunk[1]+newBlock.numHauteur%32,posChunk[2]+newBlock.numProfondeur%32),typeBlock);
+                listeVoxels[newBlock.indiceVoxel] = vox;
 
-            this->listeChunks[indiceChunk]->setListeVoxels(listeVoxels);
-            this->listeChunks[indiceChunk]->loadChunk(this);
-
-            return true;
+                this->listeChunks[newBlock.indiceChunk]->setListeVoxels(listeVoxels);
+                this->listeChunks[newBlock.indiceChunk]->loadChunk(this);
+                return true;
+            }
         }
     }
-
     return false;
 }
 

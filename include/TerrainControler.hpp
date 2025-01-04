@@ -19,7 +19,7 @@ class Chunk;
 class Voxel;
 
 struct LocalisationBlock {
-    int indiceVoxel, indiceChunk, numLongueur, numProfondeur, numHauteur, idInChunk;
+    int indiceVoxel, indiceChunk, numLongueur, numProfondeur, numHauteur, idInChunk, targetedFace;
 };
 
 class Entity;
@@ -50,7 +50,7 @@ class TerrainControler{
         void constructStructure(int i, int j, int k);
         bool generateStructure;
 
-        std::vector<glm::vec3> detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint);
+        LocalisationBlock detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint);
         
     public :
         TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure);
