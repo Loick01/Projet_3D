@@ -52,7 +52,7 @@ class ParamsWindow{
         ~ParamsWindow();
         void useStyle();
         void init(GLFWwindow* window);
-        void modifTerrain();
+        void modifTerrain(bool needToLoad);
         void draw();
         bool getInEditor();
         void attachNewTerrain(TerrainControler *terrainControler);

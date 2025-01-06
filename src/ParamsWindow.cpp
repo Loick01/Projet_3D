@@ -77,9 +77,17 @@ void ParamsWindow::resetClearEntity(){
 	this->clearEntity = false;
 }
 
-void ParamsWindow::modifTerrain(){
+void ParamsWindow::modifTerrain(bool needToLoad){
     if (!this->inEditor){
         this->clearEntity = true; // On fera disparaître les entités au moment où on change le terrain
+
+        if (*this->nbChunkTerrain > *this->planeHeight){ // On prend pas de risque, on réinitialise la spline
+            *this->nbChunkTerrain = 1;
+            this->mg->setNbChunkTerrain(*(this->nbChunkTerrain));
+            this->resetContinentalnessPlot();
+            this->resetCavePlot();
+        }
+
         if (this->use_terrain_spline) this->mg->setContinentalnessSpline(this->terrain_simplex_values, this->continentalness_values);
         else this->mg->setHasTerrainSpline(false);
 
@@ -99,14 +107,14 @@ void ParamsWindow::modifTerrain(){
         if (*(this->generateStructure)){
             this->terrainControler->buildStructures(dataPixels);
         }
-        this->terrainControler->loadTerrain();
+        if (needToLoad) this->terrainControler->loadTerrain();
         stbi_image_free(dataPixels);
         stbi_image_free(dataPixelsCaveAC);
         this->hitboxPlayer->setPosition(glm::vec3(-0.5f,(terrainControler->getPlaneHeight())*32.0f,-0.5f));
         this->hitboxPlayer->resetCanTakeDamage(); // Le joueur ne prends pas de dégâts de chute s'il tombe de trop haut au moment du changement de terrain
     }else{
         this->terrainControler->buildEditorChunk();
-        this->terrainControler->loadTerrain();
+        if (needToLoad) this->terrainControler->loadTerrain();
     }
 }
 
@@ -209,6 +217,8 @@ void ParamsWindow::saveConfigTerrain(){
     std::ofstream saveFile(saveFileName);
 
     if (saveFile.is_open()) {
+        saveFile << *this->planeWidth << " " << *this->planeHeight << " " << *this->planeLength << " ";
+        saveFile << *this->seedTerrain << " " << *this->octave << " " << *this->nbChunkTerrain << "\n";
         saveFile << this->saveBiomeChart(&this->racineBiomeChart,0) << "\n";
         // Sauvegarde de la spline utilisée pour la surface du terrain
         for (unsigned int i = 0 ; i < this->terrain_simplex_values.size() ; i++){
@@ -220,6 +230,7 @@ void ParamsWindow::saveConfigTerrain(){
             saveFile << this->cave_simplex_values[i] << "/" << this->cave_height_values[i] << " ";
         }
         saveFile << "\n";
+        saveFile << this->terrainControler->saveModifBlocks();
         saveFile.close();
     } else {
         std::cerr << "Erreur : impossible d'ouvrir le fichier.\n";
@@ -240,23 +251,51 @@ void ParamsWindow::openConfigTerrain(){
         while (std::getline(saveFile, next_line)) {
             std::istringstream flux_next_line(next_line);
             std::string next_word;
+            if (n_line==0){
+                flux_next_line >> next_word;
+                *this->planeWidth = std::stoi(next_word);
+                this->mg->setWidthMap(*(this->planeWidth));
+                flux_next_line >> next_word;
+                *this->planeHeight = std::stoi(next_word);
+                this->mg->setHeightMap(*(this->planeHeight));
+                flux_next_line >> next_word;
+                *this->planeLength = std::stoi(next_word);
+                this->mg->setLengthMap(*(this->planeLength));
+                flux_next_line >> next_word;
+                *this->seedTerrain = std::stoi(next_word);
+                this->mg->setSeed(*(this->seedTerrain));
+                flux_next_line >> next_word;
+                *this->octave = std::stoi(next_word);
+                this->mg->setOctave(*(this->octave));
+                flux_next_line >> next_word;
+                *this->nbChunkTerrain = std::stoi(next_word);
+                this->mg->setNbChunkTerrain(*(this->nbChunkTerrain));
+            }
             while (flux_next_line >> next_word) {
-                if (n_line == 0 && next_word.size() > 0){ // Reconstruction de la biome chart
+                if (n_line == 1 && next_word.size() > 0){ // Reconstruction de la biome chart
                     this->rebuildBiomeChart(&this->racineBiomeChart, next_word, 2, true);
                 }
-                if (n_line == 1){ // Ouverture de la spline de la surface du terrain
+                if (n_line == 2){ // Ouverture de la spline de la surface du terrain
                     std::size_t separation = next_word.find("/");
                     this->terrain_simplex_values.push_back(std::stof(next_word.substr(0,separation)));
                     this->continentalness_values.push_back(std::stof(next_word.substr(separation+1)));
-                }else if (n_line == 2){ // Ouverture de la spline de hauteur de la grotte
+                }else if (n_line == 3){ // Ouverture de la spline de hauteur de la grotte
                     std::size_t separation = next_word.find("/");
                     this->cave_simplex_values.push_back(std::stof(next_word.substr(0,separation)));
                     this->cave_height_values.push_back(std::stof(next_word.substr(separation+1)));
                 }
             }
             ++n_line;
+            if (n_line > 3) break;
+        }
+        this->modifTerrain(false);
+
+        // A partir de là, on lit les modifications des blocs
+        while (std::getline(saveFile, next_line)) {
+            this->terrainControler->applyModifBlock(next_line);
         }
         saveFile.close();
+        this->terrainControler->loadTerrain();
     } else {
         std::cerr << "Erreur : Aucun fichier de configuration existant.\n";
     }
@@ -355,17 +394,17 @@ void ParamsWindow::draw(){
 
     if (ImGui::SliderInt("Longueur terrain", this->planeWidth, 1, 22)){
         this->mg->setWidthMap(*(this->planeWidth));
-        this->modifTerrain();
+        this->modifTerrain(true);
     }
 
     if (ImGui::SliderInt("Largeur terrain", this->planeLength, 1, 22)){
         this->mg->setLengthMap(*(this->planeLength));
-        this->modifTerrain();
+        this->modifTerrain(true);
     }
 
     if (ImGui::SliderInt("Hauteur terrain", this->planeHeight, 1, 22)){
         this->mg->setHeightMap(*(this->planeHeight));
-        this->modifTerrain();
+        this->modifTerrain(true);
     }
 
     ImGui::Spacing();
@@ -405,7 +444,7 @@ void ParamsWindow::draw(){
         ImGui::Checkbox("Placer les structures sur le terrain", this->generateStructure);
 
         if (ImGui::Button("Mettre à jour le terrain")){
-            this->modifTerrain();
+            this->modifTerrain(true);
         }
 
         if (ImGui::Button("Save Terrain Config")){

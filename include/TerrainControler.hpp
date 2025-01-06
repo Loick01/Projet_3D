@@ -5,6 +5,7 @@
 
 #define RANGE 4
 #define CHUNK_SIZE 32
+#define NO_BLOCK -1
 
 struct BlockStructure{
     int infoBlock[4];
@@ -20,6 +21,18 @@ class Voxel;
 
 struct LocalisationBlock {
     int indiceVoxel, indiceChunk, numLongueur, numProfondeur, numHauteur, idInChunk, targetedFace;
+};
+
+struct PositionBlock {
+    int numLongueur, numProfondeur, numHauteur;
+    bool operator==(const PositionBlock& pb) const {
+        return numLongueur == pb.numLongueur && numHauteur == pb.numHauteur && numProfondeur == pb.numProfondeur;
+    }
+};
+struct PositionBlockHash {
+    std::size_t operator()(const PositionBlock& pb) const {
+        return std::hash<int>()(pb.numLongueur) ^ std::hash<int>()(pb.numHauteur) ^ std::hash<int>()(pb.numProfondeur);
+    }
 };
 
 class Entity;
@@ -51,6 +64,8 @@ class TerrainControler{
         bool generateStructure;
 
         LocalisationBlock detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint);
+        std::unordered_map<PositionBlock, int, PositionBlockHash> modifsBlock;
+        void printModif();
         
     public :
         TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure);
@@ -90,4 +105,6 @@ class TerrainControler{
         void setUseBiomeChart(bool biomeChart);
 
         static Structure readStructureFile(std::ifstream &file);
+        std::string saveModifBlocks();
+        void applyModifBlock(std::string infoBlock);
 };

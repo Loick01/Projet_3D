@@ -306,10 +306,76 @@ LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::
     return {-1,-1,-1,-1,-1,-1,0};
 }
 
+void TerrainControler::printModif(){
+    std::cout << "Liste des modifications : \n";
+    for(std::unordered_map<PositionBlock,int>::iterator it = this->modifsBlock.begin(); it != modifsBlock.end(); ++it) {
+        std::cout << it->first.numLongueur << ", " << it->first.numHauteur << ", " << it->first.numProfondeur << " --> " << it->second << "\n";
+    }
+}
+
+std::string TerrainControler::saveModifBlocks(){
+    std::stringstream res;
+    for(std::unordered_map<PositionBlock,int>::iterator it = this->modifsBlock.begin(); it != modifsBlock.end(); ++it) {
+        res << it->first.numLongueur << " " << it->first.numHauteur << " " << it->first.numProfondeur << " " << it->second << "\n";
+    }
+    return res.str();
+}
+
+void TerrainControler::applyModifBlock(std::string infoBlock){
+    std::istringstream flux_infoBlock(infoBlock);
+    std::string next_word;
+    this->modifsBlock.clear();
+
+    flux_infoBlock >> next_word;
+    int nWidth = std::stoi(next_word);
+    flux_infoBlock >> next_word;
+    int nHeight = std::stoi(next_word);
+    flux_infoBlock >> next_word;
+    int nLength = std::stoi(next_word);
+    flux_infoBlock >> next_word;
+    int typeBlock = std::stoi(next_word);
+
+    // Appliquer la modification
+    int indiceVoxel = (nHeight%32)*1024 + (nLength%32) * 32 + (nWidth%32);
+    int indiceChunk = (nWidth/32) * planeLength * planeHeight + (nLength/32) * planeHeight + nHeight/32 ;
+
+    std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
+    if (typeBlock == NO_BLOCK && listeVoxels[indiceVoxel]!=nullptr){
+        delete listeVoxels[indiceVoxel];
+        listeVoxels[indiceVoxel] = nullptr;
+        this->listeChunks[indiceChunk]->setListeVoxels(listeVoxels);
+    }else if (typeBlock != NO_BLOCK){
+        if (listeVoxels[indiceVoxel]!=nullptr){ // Supprimer l'ancien bloc s'il existe
+            delete listeVoxels[indiceVoxel];
+            listeVoxels[indiceVoxel] = nullptr;
+        }
+        // Puis on crée le nouveau bloc
+        glm::vec3 posChunk = this->listeChunks[indiceChunk]->getPosition();
+        Voxel* vox = new Voxel(glm::vec3(posChunk[0]+nWidth%32,posChunk[1]+nHeight%32,posChunk[2]+nLength%32),typeBlock);
+        listeVoxels[indiceVoxel] = vox;
+        this->listeChunks[indiceChunk]->setListeVoxels(listeVoxels);
+    }
+
+    // Conserver la modification pour la prochaine sauvegarde
+    PositionBlock pb;
+    pb.numLongueur = nWidth;
+    pb.numProfondeur = nLength;
+    pb.numHauteur = nHeight;
+    this->modifsBlock[pb]=typeBlock;
+}
+
 void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir testé (au minimum) si lb.indiceVoxel != -1 avant d'appeler cette fonction
     std::vector<Voxel*> listeVoxels = this->listeChunks[lb.indiceChunk]->getListeVoxels();
     delete listeVoxels[lb.indiceVoxel]; // Ne pas oublier de bien libérer la mémoire
     listeVoxels[lb.indiceVoxel] = nullptr;
+
+    // On enregistre la modification pour la sauvegarde
+    PositionBlock pb;
+    pb.numLongueur = lb.numLongueur;
+    pb.numProfondeur = lb.numProfondeur;
+    pb.numHauteur = lb.numHauteur;
+    this->modifsBlock[pb]=NO_BLOCK;
+    //this->printModif();
 
     this->listeChunks[lb.indiceChunk]->setListeVoxels(listeVoxels);
     this->listeChunks[lb.indiceChunk]->loadChunk(this);
@@ -339,6 +405,14 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
                 glm::vec3 posChunk = this->listeChunks[newBlock.indiceChunk]->getPosition();
                 Voxel* vox = new Voxel(glm::vec3(posChunk[0]+newBlock.numLongueur%32,posChunk[1]+newBlock.numHauteur%32,posChunk[2]+newBlock.numProfondeur%32),typeBlock);
                 listeVoxels[newBlock.indiceVoxel] = vox;
+
+                // On enregistre la modification pour la sauvegarde
+                PositionBlock pb;
+                pb.numLongueur = newBlock.numLongueur;
+                pb.numProfondeur = newBlock.numProfondeur;
+                pb.numHauteur = newBlock.numHauteur;
+                this->modifsBlock[pb]=typeBlock;
+                //this->printModif();
 
                 this->listeChunks[newBlock.indiceChunk]->setListeVoxels(listeVoxels);
                 this->listeChunks[newBlock.indiceChunk]->loadChunk(this);
