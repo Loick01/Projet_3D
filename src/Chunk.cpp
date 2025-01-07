@@ -2,6 +2,8 @@
 
 #define CHUNK_SIZE 32
 
+const std::set<int> Chunk::transparentBlock = {GLASS_BLOCK, LEAVES_BLOCK};
+
 Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, int nbTerrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, unsigned char* dataPixelsCaveAC, int widthHeightmap, int lengthHeightMap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc){
     this->pos_i = i;
     this->pos_j = j;
@@ -26,11 +28,13 @@ Chunk::Chunk(int i, int j, int k, FastNoise noiseGenerator, int nbTerrainChunk, 
             this->buildCaveChunk(k, dataPixelsCaveAC, posWidthChunk, posLengthChunk, widthHeightmap);
         }
     }
+    this->currentTerrainControler = nullptr;
 }
 
 Chunk::Chunk(glm::vec3 position, bool referenceChunk){
     this->position = position;
     this->buildEditorChunk(referenceChunk);
+    this->currentTerrainControler = nullptr;
 }
 
 Chunk::~Chunk(){
@@ -304,8 +308,30 @@ void Chunk::addIndices(int* compteur){
     this->indices.push_back(decalage + 1);
 }
 
+void Chunk::buildFace(bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, int* compteur, std::vector<glm::vec3> voxel_vertices){
+    if (cond1){
+        if (listeVoxels[a1] == nullptr || transparentBlock.count(listeVoxels[a1]->getID())){
+            addIndices(compteur);
+            this->objectIDs.push_back(voxel_id);
+            this->faceIDs.push_back(dec);
+            std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+(dec*4), voxel_vertices.begin()+(dec+1)*4);
+            this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+        }
+    }else{
+        // Il faut aller le chunk en dessous (pos_k-1)
+        Chunk *cnk = this->currentTerrainControler->getChunkAt(this->pos_i+v1,this->pos_k+v2,this->pos_j+v3);
+        if (cnk == nullptr || (cnk != nullptr && (cnk->getListeVoxels()[a2] == nullptr || transparentBlock.count(cnk->getListeVoxels()[a2]->getID())))){
+            addIndices(compteur);
+            this->objectIDs.push_back(3); // A remplacer par voxel_id
+            this->faceIDs.push_back(dec);
+            std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+(dec*4), voxel_vertices.begin()+(dec+1)*4);
+            this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+        }
+    }
+}
 void Chunk::loadChunk(TerrainControler* tc){
-    // ATTENTION : tc a une valeur apr défaut à nullptr
+    // ATTENTION : tc a une valeur par défaut à nullptr
+    this->currentTerrainControler = tc;
 
     // Très important de vider les vectors, sinon quand on modifie un chunk on ne voit aucune différence
     this->vertices.clear();
@@ -313,164 +339,27 @@ void Chunk::loadChunk(TerrainControler* tc){
     this->objectIDs.clear();
     this->faceIDs.clear(); 
 
-    // int compteur = 0; // Nombre de voxel déjà chargé, pour savoir où en est le décalage des indices
     int compteur = 0; // Nombre de face déjà chargé, pour savoir où en est le décalage des indices
-    //std::vector<int> objectIDs;
 
     for (int i = 0 ; i < this->listeVoxels.size() ; i++){
         if (listeVoxels[i] != nullptr){
-            /*
-            if (listeVoxels[i]->getVisible()){
-                listeVoxels[i]->setIdInChunk(compteur); // Les voxels auront besoin d'avoir connaissance de leurs positions dans les buffers (c'est pour l'animation de la destruction d'un bloc)
-                std::vector<glm::vec3> verticesVoxel = listeVoxels[i]->getVertices();
-                this->vertices.insert(this->vertices.end(), verticesVoxel.begin(), verticesVoxel.end());
-
-                for (int c = 0 ; c < 6 ; c++){ // Toutes les faces d'un voxel
-                    unsigned int decalage = 24*compteur + c*4;
-                    this->indices.push_back(decalage + 2);
-                    this->indices.push_back(decalage + 0);
-                    this->indices.push_back(decalage + 3);
-                    this->indices.push_back(decalage + 3);
-                    this->indices.push_back(decalage + 0);
-                    this->indices.push_back(decalage + 1);
-                }
-                compteur++;
-
-                objectIDs.push_back(listeVoxels[i]->getID());
-            }
-            */
-
             std::vector<glm::vec3> voxel_vertices = listeVoxels[i]->getVertices();
             int voxel_id = listeVoxels[i]->getID();
 
             // Face inférieur
-            if (i >= CHUNK_SIZE*CHUNK_SIZE){
-                if (listeVoxels[i-CHUNK_SIZE*CHUNK_SIZE] == nullptr){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(voxel_id);
-                    this->faceIDs.push_back(0);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin(), voxel_vertices.begin()+4);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }else{
-                // Il faut aller le chunk en dessous (pos_k-1)
-                Chunk *cnk = tc->getChunkAt(this->pos_i,this->pos_k-1,this->pos_j);
-                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i+(32*32*31)] == nullptr)){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(3);
-                    this->faceIDs.push_back(0);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin(), voxel_vertices.begin()+4);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }
-
+            this->buildFace(i >= CHUNK_SIZE*CHUNK_SIZE, i-CHUNK_SIZE*CHUNK_SIZE, 0, i+(32*32*31), voxel_id, 0, -1, 0, &compteur, voxel_vertices);
             // Face supérieur
-            if (i/(CHUNK_SIZE*CHUNK_SIZE) != (CHUNK_SIZE-1)){
-                if (listeVoxels[i+CHUNK_SIZE*CHUNK_SIZE] == nullptr){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(voxel_id);
-                    this->faceIDs.push_back(1);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+4, voxel_vertices.begin()+8);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }else{
-                // Il faut aller le chunk au dessus (pos_k+1)
-                Chunk *cnk = tc->getChunkAt(this->pos_i,this->pos_k+1,this->pos_j);
-                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i-(32*32*31)] == nullptr)){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(3);
-                    this->faceIDs.push_back(1);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+4, voxel_vertices.begin()+8);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }
-
+            this->buildFace(i/(CHUNK_SIZE*CHUNK_SIZE) != (CHUNK_SIZE-1), i+CHUNK_SIZE*CHUNK_SIZE, 1, i-(32*32*31), voxel_id, 0, 1, 0, &compteur, voxel_vertices);
             // Face arrière
-            if (i%(CHUNK_SIZE*CHUNK_SIZE) >= CHUNK_SIZE){
-                if (listeVoxels[i-CHUNK_SIZE] == nullptr){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(voxel_id);
-                    this->faceIDs.push_back(2);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+8, voxel_vertices.begin()+12);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }else{
-                // Il faut aller le chunk derrière (pos_j-1)
-                Chunk *cnk = tc->getChunkAt(this->pos_i,this->pos_k,this->pos_j-1);
-                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i+(32*31)] == nullptr)){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(3);
-                    this->faceIDs.push_back(2);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+8, voxel_vertices.begin()+12);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }
-
+            this->buildFace(i%(CHUNK_SIZE*CHUNK_SIZE) >= CHUNK_SIZE, i-CHUNK_SIZE, 2, i+(32*31), voxel_id, 0, 0, -1, &compteur, voxel_vertices);
             // Face avant
-            if (i%(CHUNK_SIZE*CHUNK_SIZE) < CHUNK_SIZE*(CHUNK_SIZE-1)){
-                if (listeVoxels[i+CHUNK_SIZE] == nullptr){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(voxel_id);
-                    this->faceIDs.push_back(3);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+12, voxel_vertices.begin()+16);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }else{
-                // Il faut aller le chunk devant (pos_j+1)
-                Chunk *cnk = tc->getChunkAt(this->pos_i,this->pos_k,this->pos_j+1);
-                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i-(32*31)] == nullptr)){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(3);
-                    this->faceIDs.push_back(3);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+12, voxel_vertices.begin()+16);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }
-
+            this->buildFace(i%(CHUNK_SIZE*CHUNK_SIZE) < CHUNK_SIZE*(CHUNK_SIZE-1), i+CHUNK_SIZE, 3, i-(32*31), voxel_id, 0, 0, 1, &compteur, voxel_vertices);
             // Face gauche
-            if (i%CHUNK_SIZE != 0){
-                if (listeVoxels[i-1] == nullptr){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(voxel_id);
-                    this->faceIDs.push_back(4);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+16, voxel_vertices.begin()+20);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }else{
-                // Il faut aller le chunk à gauche (pos_i-1)
-                Chunk *cnk = tc->getChunkAt(this->pos_i-1,this->pos_k,this->pos_j);
-                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i+31] == nullptr)){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(3);
-                    this->faceIDs.push_back(4);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+16, voxel_vertices.begin()+20);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }
-
+            this->buildFace(i%CHUNK_SIZE != 0, i-1, 4, i+31, voxel_id, -1, 0, 0, &compteur, voxel_vertices);
             // Face droite
-            if (i%CHUNK_SIZE != (CHUNK_SIZE-1)){
-                if (listeVoxels[i+1] == nullptr){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(voxel_id);
-                    this->faceIDs.push_back(5);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+20, voxel_vertices.begin()+24);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }else{
-                // Il faut aller le chunk à droite (pos_i+1)
-                Chunk *cnk = tc->getChunkAt(this->pos_i+1,this->pos_k,this->pos_j);
-                if (cnk == nullptr || (cnk != nullptr && cnk->getListeVoxels()[i-31] == nullptr)){
-                    addIndices(&compteur);
-                    this->objectIDs.push_back(3);
-                    this->faceIDs.push_back(5);
-                    std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+20, voxel_vertices.begin()+24);
-                    this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
-                }
-            }
+            this->buildFace(i%CHUNK_SIZE != (CHUNK_SIZE-1), i+1, 5, i-31, voxel_id, 1, 0, 0, &compteur, voxel_vertices);
         }
     }
-    
     this->sendVoxelMapToShader();
 }
 

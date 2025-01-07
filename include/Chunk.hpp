@@ -12,6 +12,8 @@
 #define STONE_BLOCK 0
 #define SNOW_BLOCK 16
 #define SAND_BLOCK 7
+#define GLASS_BLOCK 20
+#define LEAVES_BLOCK 23
 
 class Voxel; // Déclaration avancée (je ne comprends pas pourquoi on est obligé de faire ça, avant ce n'était pas nécéssaire)
 
@@ -32,6 +34,8 @@ class Chunk{
         GLuint shaderstoragebuffer;
         GLuint shaderstoragebuffer3;
         // int ID;
+        TerrainControler* currentTerrainControler;
+        static const std::set<int> transparentBlock;
 
         void addIndices(int* compteur);
     public:
@@ -45,6 +49,7 @@ class Chunk{
         void buildSinusChunk();
         void buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc, FastNoise noiseGenerator);
         void buildEditorChunk(bool referenceChunk);
+        void buildFace(bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, int* compteur, std::vector<glm::vec3> voxel_vertices);
         void loadChunk(TerrainControler* tc = nullptr);
         void drawChunk();
         std::vector<Voxel*> getListeVoxels();

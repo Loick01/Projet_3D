@@ -16,6 +16,7 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
+#include <cstdint>
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/sysinfo.h>
