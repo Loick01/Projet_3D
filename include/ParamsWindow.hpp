@@ -2,6 +2,7 @@
 
 #include <Headers.hpp>
 
+
 // Temporaire (tant que ces variables n'ont pas été mise dans des classes)
 #include "variables.h"
 
@@ -46,6 +47,9 @@ class ParamsWindow{
         void openConfigTerrain();
         void divisionCell(CelluleBiome* tc);
         void rebuildBiomeChart(CelluleBiome* currentCell, std::string next_word, int startPos, bool isInCC);
+
+        void openBuilderTools();
+        void saveScreenshot(const std::string& filename, int width, int height, int captureWidth, int captureHeight);
 
     public:
         ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player);

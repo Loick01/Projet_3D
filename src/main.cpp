@@ -26,6 +26,7 @@ bool cameraOrbitale = false;
 bool cameraLibre = false;
 bool cameraMouseLibre = true;
 bool cameraMousePlayer = false;
+int buttonChecked=0;
 int speedCam = 200;
 double previousX = SCREEN_WIDTH / 2;
 double previousY = SCREEN_HEIGHT / 2;
@@ -108,6 +109,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             cameraMousePlayer = false;
             cameraOrbitale = false;
             cameraLibre = !cameraMouseLibre;
+    }
+
+    // Pour créer une structure
+    if (key == GLFW_KEY_J && action == GLFW_PRESS){
+            printf("le boutton pressé est le %d\n",buttonChecked);
+                
+            
+            
     }
 }
 
@@ -358,6 +367,7 @@ int main(){
     structureBiome0.push_back("../Structures/Tree_2.txt");
     structureBiome0.push_back("../Structures/Tree_3.txt");
     structureBiome0.push_back("../Structures/House_1.txt");
+    structureBiome0.push_back("../Structures/cake.txt");
 
     std::vector<std::string> structureBiome1;
     structureBiome1.push_back("../Structures/arche.txt");

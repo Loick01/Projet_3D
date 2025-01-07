@@ -43,3 +43,9 @@
 #include <ParamsWindow.hpp>
 #include <Agent.hpp>
 #include <Sound.hpp>
+
+#include <dirent.h>  // Pour opendir, readdir, closedir
+#include <sys/types.h>
+#include <algorithm>
+
+

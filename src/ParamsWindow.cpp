@@ -1,6 +1,11 @@
 #include <ParamsWindow.hpp>
 
+
 char ParamsWindow::nameStructure[512]; // Permet d'éviter les erreurs de lien à la compilation
+
+bool showBuilderWindow = true;
+int height,width;
+
 
 ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player){
     this->style = style;
@@ -61,12 +66,49 @@ void ParamsWindow::init(GLFWwindow* window){
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
-
+    glfwGetFramebufferSize(window, &width, &height);  // Récupère la taille du framebuffer
     ImPlot::CreateContext();
 }
 
 bool ParamsWindow::getInEditor(){
     return this->inEditor;
+}
+
+void ParamsWindow::saveScreenshot(const std::string& filename, int width, int height, int captureWidth, int captureHeight)
+{
+    // Calculer la position du centre pour capturer une zone spécifique
+    int xStart = (width - captureWidth) / 2;  // Début du rectangle horizontal
+    int yStart = (height - captureHeight) / 2; // Début du rectangle vertical
+
+    // Allouer un tableau pour stocker les pixels de l'image
+    unsigned char* pixels = new unsigned char[3 * captureWidth * captureHeight];  // 3 canaux (RGB)
+
+    // Lire les pixels du framebuffer spécifié
+    glReadPixels(xStart, yStart, captureWidth, captureHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+
+    // Inverser l'image (les pixels sont capturés de bas en haut, donc on inverse)
+    for (int y = 0; y < captureHeight / 2; ++y)
+    {
+        for (int x = 0; x < captureWidth; ++x)
+        {
+            int topIndex = (y * captureWidth + x) * 3;
+            int bottomIndex = ((captureHeight - y - 1) * captureWidth + x) * 3;
+
+            // Échanger les pixels
+            std::swap(pixels[topIndex], pixels[bottomIndex]);
+            std::swap(pixels[topIndex + 1], pixels[bottomIndex + 1]);
+            std::swap(pixels[topIndex + 2], pixels[bottomIndex + 2]);
+        }
+    }
+
+    // Enregistrer l'image en PNG à l'emplacement spécifié
+    if (stbi_write_png(filename.c_str(), captureWidth, captureHeight, 3, pixels, captureWidth * 3) == 0)
+    {
+        std::cerr << "Erreur lors de l'enregistrement de l'image !" << std::endl;
+    }
+
+    // Libérer la mémoire allouée pour les pixels
+    delete[] pixels;
 }
 
 bool ParamsWindow::getClearEntity(){
@@ -75,6 +117,123 @@ bool ParamsWindow::getClearEntity(){
 
 void ParamsWindow::resetClearEntity(){
 	this->clearEntity = false;
+}
+
+void ParamsWindow::openBuilderTools()
+{
+    if (showBuilderWindow)
+    {
+        // Répertoire à parcourir
+        const std::string directoryPath = "../Structures";
+
+        // Vecteur pour stocker les noms des fichiers .txt
+        std::vector<std::string> txtFiles;
+
+        // Ouvrir le répertoire
+        DIR* dir = opendir(directoryPath.c_str());
+        if (dir != nullptr) {
+            struct dirent* entry;
+            while ((entry = readdir(dir)) != nullptr) {
+                // Vérifie si c'est un fichier régulier (pas un répertoire)
+                if (entry->d_type == DT_REG) {
+                    std::string fileName = entry->d_name;
+
+                    // Vérifie l'extension .txt
+                    if (fileName.size() >= 4 && fileName.substr(fileName.size() - 4) == ".txt") {
+                        txtFiles.push_back(fileName);
+                    }
+                }
+            }
+            closedir(dir);
+        } else {
+            std::cerr << "Impossible d'ouvrir le répertoire : " << directoryPath << std::endl;
+        }
+
+        // Trie les fichiers par ordre alphabétique
+        std::sort(txtFiles.begin(), txtFiles.end());
+
+        // Chargez une texture d'exemple pour les boutons 
+        GLint buttonTexture = loadTexture2DFromFilePath("../Textures/Blocks/atlas.png");
+        if (!buttonTexture) {
+            std::cerr << "Impossible de charger la texture pour les boutons !" << std::endl;
+            return;
+        }
+
+        // Début de la fenêtre ImGui
+        ImGui::Begin("ToolWindow");
+
+        std::vector<bool> buttonStates;
+
+            // On vérifie si la taille de buttonStates correspond à la taille du nombre de fichiers
+        if (buttonStates.size() != txtFiles.size()) {
+            // Si la taille ne correspond pas, on réinitialise le vecteur à la taille correcte
+            buttonStates.resize(txtFiles.size(), false);
+        }
+
+        int buttonIndex = 0; // Numéro des boutons
+
+        // PROBLEME AVEC LES BOUTONS IMAGES, CHARGEMENT TEXTURES?
+
+        for (const auto& fileName : txtFiles) {
+            buttonStates[buttonIndex]=false;
+            GLuint buttonTexture = loadTexture2DFromFilePath("../Structures/" + fileName.substr(0, fileName.size() - 4) + ".png");
+            if (!buttonTexture) {
+                std::cerr << "Erreur de chargement de la texture pour " << fileName << std::endl;
+            }
+
+            // Affichage du bouton avec l'image
+            // if (ImGui::ImageButton((ImTextureID)(intptr_t)buttonTexture, ImVec2(256, 256))) {
+            //     // Si le bouton est cliqué, alterner l'état du bouton
+            //     buttonStates[buttonIndex] = !buttonStates[buttonIndex];
+            //     std::cout << "Bouton " << buttonIndex + 1 << " cliqué" << std::endl;
+                
+            //     // Débogage supplémentaire pour vérifier si l'événement de clic est déclenché
+            //     std::cout << "buttonStates[" << buttonIndex << "] = " << buttonStates[buttonIndex] << std::endl;
+            // }
+
+            std::string buttonLabel = std::to_string(buttonIndex + 1); // Numéro du bouton (1-indexed)
+            if (ImGui::Button(buttonLabel.c_str(), ImVec2(64, 64))) {
+                buttonStates[buttonIndex] = !buttonStates[buttonIndex]; // alterne l'état
+                buttonChecked=buttonIndex+1;
+                //std::cout << "Bouton " << buttonIndex + 1 << " cliqué" << std::endl;
+            }
+
+            // // Affichage du message si l'état du bouton est "coché"
+            // if (buttonStates[buttonIndex]) {
+            //     ImGui::Text("Bouton %d est coché", buttonIndex + 1);  // Affiche un message si le bouton est coché
+            // }
+            
+
+
+            
+
+            
+
+                        // Restauration de la couleur du bouton
+            // if (buttonStates[buttonIndex]) {
+            //     ImGui::PopStyleColor();
+            // }
+
+
+            // Si le nombre de boutons atteint 4, passez à la ligne suivante
+            if (buttonIndex % 4 == 0) {
+                ImGui::NewLine(); // Nouvelle ligne pour les boutons
+            } else {
+                ImGui::SameLine(); // Aligne les boutons sur la même ligne
+            }
+            buttonIndex++;
+            
+        }
+
+        // Si aucun fichier trouvé
+        if (txtFiles.empty()) {
+            ImGui::Text("Aucun fichier .txt trouvé dans ../Structures.");
+        }
+
+        // Fin de la fenêtre ImGui
+        ImGui::End();
+        
+    }
 }
 
 void ParamsWindow::modifTerrain(bool needToLoad){
@@ -309,6 +468,7 @@ void ParamsWindow::draw(){
     ImGui_ImplGlfw_NewFrame();
     float fps = ImGui::GetIO().Framerate;
 
+
     ImGui::NewFrame();
     ImGui::Begin("Panneau de contrôle");
     if (ImGui::SliderInt("Style de la fenêtre ImGui", &(this->style), 0, 2)){
@@ -381,6 +541,7 @@ void ParamsWindow::draw(){
     ImGui::Checkbox("Afficher l'hud", &showHud);
 
     ImGui::Spacing();
+    
 
     ImGui::Checkbox("Mode de jeu (créatif/survie)", &modeJeu);
 
@@ -396,7 +557,6 @@ void ParamsWindow::draw(){
         this->mg->setWidthMap(*(this->planeWidth));
         this->modifTerrain(true);
     }
-
     if (ImGui::SliderInt("Largeur terrain", this->planeLength, 1, 22)){
         this->mg->setLengthMap(*(this->planeLength));
         this->modifTerrain(true);
@@ -416,7 +576,10 @@ void ParamsWindow::draw(){
         if (ImGui::Button("Sauvegarder la structure")){
             std::string filePath = nameStructure;
             if (filePath.size() != 0){
+                std::string pngStructure = std::string(nameStructure) + ".png";
                 this->terrainControler->saveStructure(filePath);
+                this->saveScreenshot("../Structures/" + pngStructure,width,height,200,200);
+
             }else{
                 std::cout << "Veuillez saisir un nom pour le fichier de la structure\n";
             }
@@ -442,6 +605,9 @@ void ParamsWindow::draw(){
         ImGui::Spacing();
 
         ImGui::Checkbox("Placer les structures sur le terrain", this->generateStructure);
+
+        ImGui::Checkbox("Builder Tools", &showBuilderWindow);
+
 
         if (ImGui::Button("Mettre à jour le terrain")){
             this->modifTerrain(true);
@@ -645,6 +811,8 @@ void ParamsWindow::draw(){
     }
 
     ImGui::End();
+
+    this->openBuilderTools();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

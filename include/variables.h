@@ -14,6 +14,17 @@ extern bool cameraLibre;
 extern bool cameraMouseLibre;
 extern bool cameraMousePlayer;
 
+
+
+extern bool creatorMod;
+extern float creationDistance;
+extern float radius;
+extern bool brushTool;
+extern bool sphereTool;
+extern bool cubeTool;
+extern bool erasor;
+extern int buttonChecked;
+
 struct CelluleBiome{
     bool isDivide;
     int typeBiome;
