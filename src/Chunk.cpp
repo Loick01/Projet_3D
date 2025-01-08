@@ -298,8 +298,7 @@ void Chunk::buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, 
     */
 }
 
-void Chunk::addIndices(int* compteur){
-    int decalage = ((*compteur)++)*4; // 4 sommets par face
+void Chunk::addIndices(int decalage){
     this->indices.push_back(decalage + 2);
     this->indices.push_back(decalage + 0);
     this->indices.push_back(decalage + 3);
@@ -308,24 +307,39 @@ void Chunk::addIndices(int* compteur){
     this->indices.push_back(decalage + 1);
 }
 
-void Chunk::buildFace(bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, int* compteur, std::vector<glm::vec3> voxel_vertices){
+void Chunk::addFace(Voxel* v_bottom,int orientation){
+    std::string face_id = v_bottom->getRacineFaceID() + std::to_string(orientation);
+    this->map_objectIDs[face_id] = v_bottom->getID();
+    this->map_faceIDs[face_id] = orientation;
+    this->map_vertices[face_id] = v_bottom->getVerticesFromFace(orientation);
+}
+
+void Chunk::removeFaces(std::string racine_face_id){
+    for (int i = 0 ; i < 6 ; i++){
+        std::string face_unique_id = racine_face_id + std::to_string(i);
+        this->map_objectIDs.erase(face_unique_id);
+        this->map_faceIDs.erase(face_unique_id);
+        this->map_vertices.erase(face_unique_id);
+    }
+    this->sendVoxelMapToShader();
+}
+
+void Chunk::buildFace(std::string unique_id_face, bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, std::vector<glm::vec3> voxel_vertices){
     if (cond1){
         if (listeVoxels[a1] == nullptr || transparentBlock.count(listeVoxels[a1]->getID())){
-            addIndices(compteur);
-            this->objectIDs.push_back(voxel_id);
-            this->faceIDs.push_back(dec);
+            this->map_objectIDs[unique_id_face] = voxel_id;
+            this->map_faceIDs[unique_id_face] = dec;
             std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+(dec*4), voxel_vertices.begin()+(dec+1)*4);
-            this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+            this->map_vertices[unique_id_face] = face_vertices;
         }
     }else{
         // Il faut aller le chunk en dessous (pos_k-1)
         Chunk *cnk = this->currentTerrainControler->getChunkAt(this->pos_i+v1,this->pos_k+v2,this->pos_j+v3);
         if (cnk == nullptr || (cnk != nullptr && (cnk->getListeVoxels()[a2] == nullptr || transparentBlock.count(cnk->getListeVoxels()[a2]->getID())))){
-            addIndices(compteur);
-            this->objectIDs.push_back(3); // A remplacer par voxel_id
-            this->faceIDs.push_back(dec);
+            this->map_objectIDs[unique_id_face] = voxel_id;
+            this->map_faceIDs[unique_id_face] = dec;
             std::vector<glm::vec3> face_vertices(voxel_vertices.begin()+(dec*4), voxel_vertices.begin()+(dec+1)*4);
-            this->vertices.insert(this->vertices.end(), face_vertices.begin(), face_vertices.end());
+            this->map_vertices[unique_id_face] = face_vertices;
         }
     }
 }
@@ -333,13 +347,11 @@ void Chunk::loadChunk(TerrainControler* tc){
     // ATTENTION : tc a une valeur par défaut à nullptr
     this->currentTerrainControler = tc;
 
-    // Très important de vider les vectors, sinon quand on modifie un chunk on ne voit aucune différence
-    this->vertices.clear();
-    this->indices.clear();
-    this->objectIDs.clear();
-    this->faceIDs.clear(); 
+    this->map_objectIDs.clear();
+    this->map_faceIDs.clear();
+    this->map_vertices.clear();
 
-    int compteur = 0; // Nombre de face déjà chargé, pour savoir où en est le décalage des indices
+    // int compteur = 0; // Nombre de face déjà chargé, pour savoir où en est le décalage des indices
 
     for (int i = 0 ; i < this->listeVoxels.size() ; i++){
         if (listeVoxels[i] != nullptr){
@@ -347,23 +359,45 @@ void Chunk::loadChunk(TerrainControler* tc){
             int voxel_id = listeVoxels[i]->getID();
 
             // Face inférieur
-            this->buildFace(i >= CHUNK_SIZE*CHUNK_SIZE, i-CHUNK_SIZE*CHUNK_SIZE, 0, i+(32*32*31), voxel_id, 0, -1, 0, &compteur, voxel_vertices);
+            this->buildFace(listeVoxels[i]->getFaceID(0), i >= CHUNK_SIZE*CHUNK_SIZE, i-CHUNK_SIZE*CHUNK_SIZE, 0, i+(32*32*31), voxel_id, 0, -1, 0, voxel_vertices);
             // Face supérieur
-            this->buildFace(i/(CHUNK_SIZE*CHUNK_SIZE) != (CHUNK_SIZE-1), i+CHUNK_SIZE*CHUNK_SIZE, 1, i-(32*32*31), voxel_id, 0, 1, 0, &compteur, voxel_vertices);
+            this->buildFace(listeVoxels[i]->getFaceID(1), i/(CHUNK_SIZE*CHUNK_SIZE) != (CHUNK_SIZE-1), i+CHUNK_SIZE*CHUNK_SIZE, 1, i-(32*32*31), voxel_id, 0, 1, 0, voxel_vertices);
             // Face arrière
-            this->buildFace(i%(CHUNK_SIZE*CHUNK_SIZE) >= CHUNK_SIZE, i-CHUNK_SIZE, 2, i+(32*31), voxel_id, 0, 0, -1, &compteur, voxel_vertices);
+            this->buildFace(listeVoxels[i]->getFaceID(2), i%(CHUNK_SIZE*CHUNK_SIZE) >= CHUNK_SIZE, i-CHUNK_SIZE, 2, i+(32*31), voxel_id, 0, 0, -1, voxel_vertices);
             // Face avant
-            this->buildFace(i%(CHUNK_SIZE*CHUNK_SIZE) < CHUNK_SIZE*(CHUNK_SIZE-1), i+CHUNK_SIZE, 3, i-(32*31), voxel_id, 0, 0, 1, &compteur, voxel_vertices);
+            this->buildFace(listeVoxels[i]->getFaceID(3), i%(CHUNK_SIZE*CHUNK_SIZE) < CHUNK_SIZE*(CHUNK_SIZE-1), i+CHUNK_SIZE, 3, i-(32*31), voxel_id, 0, 0, 1, voxel_vertices);
             // Face gauche
-            this->buildFace(i%CHUNK_SIZE != 0, i-1, 4, i+31, voxel_id, -1, 0, 0, &compteur, voxel_vertices);
+            this->buildFace(listeVoxels[i]->getFaceID(4), i%CHUNK_SIZE != 0, i-1, 4, i+31, voxel_id, -1, 0, 0, voxel_vertices);
             // Face droite
-            this->buildFace(i%CHUNK_SIZE != (CHUNK_SIZE-1), i+1, 5, i-31, voxel_id, 1, 0, 0, &compteur, voxel_vertices);
+            this->buildFace(listeVoxels[i]->getFaceID(5), i%CHUNK_SIZE != (CHUNK_SIZE-1), i+1, 5, i-31, voxel_id, 1, 0, 0, voxel_vertices);
         }
     }
     this->sendVoxelMapToShader();
 }
 
 void Chunk::sendVoxelMapToShader(){
+    // Très important de vider les vectors, sinon quand on modifie un chunk on ne voit aucune différence
+    this->vertices.clear();
+    this->indices.clear();
+    this->objectIDs.clear();
+    this->faceIDs.clear(); 
+
+    for(std::map<std::string,int>::iterator it = this->map_objectIDs.begin(); it != map_objectIDs.end(); ++it) {
+        this->objectIDs.push_back(it->second);
+    }
+    for(std::map<std::string,int>::iterator it = this->map_faceIDs.begin(); it != map_faceIDs.end(); ++it) {
+        this->faceIDs.push_back(it->second);
+    }
+    int decalage = 0;
+    for(std::map<std::string,std::vector<glm::vec3>>::iterator it = this->map_vertices.begin(); it != map_vertices.end(); ++it) {
+        std::vector<glm::vec3> vertices_face = it->second;
+        for (int i = 0 ; i < vertices_face.size() ; i++){
+            this->vertices.push_back(vertices_face[i]);
+        }
+        this->addIndices(decalage);
+        decalage += 4; // 4 sommets par face
+    }
+
     glGenBuffers(1, &(this->vertexbuffer));
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(glm::vec3), &(this->vertices[0]), GL_DYNAMIC_DRAW);

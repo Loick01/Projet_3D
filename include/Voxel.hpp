@@ -4,6 +4,7 @@
 
 struct Face{
     std::vector<glm::vec3> vertices;
+    std::string unique_id;
     // int orientation; // 0 = Bottom; 1 = Top; 2 = Back; 3 = Front; 4 = Left; 5 = Right
 };
 
@@ -27,4 +28,7 @@ class Voxel {
         int getID();
         void setIdInChunk(int idInChunk);
         int getIdInChunk();
+        std::string getFaceID(int orientationFace);
+        std::string getRacineFaceID();
+        std::vector<glm::vec3> getVerticesFromFace(int orientation);
 };

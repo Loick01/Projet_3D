@@ -16,8 +16,10 @@ glm::vec3 Voxel::getBackBottomLeftCorner(){
 
 // Voxel de taille 1.0
 void Voxel::buildVoxel(){
+    std::string racine_id = std::to_string((int)backBottomLeftCorner.x) + " " + std::to_string((int)backBottomLeftCorner.y) + " " + std::to_string((int)backBottomLeftCorner.z) + " ";
     for (int i = 0 ; i < 6 ; i++){
         Face f;
+        f.unique_id = racine_id + std::to_string(i);
         //f.orientation = i;
         for (int h = 0; h < 2 ; h++) {
             for (int w = 0; w < 2; w++) {
@@ -77,4 +79,16 @@ void Voxel::setIdInChunk(int idInChunk){
 
 int Voxel::getIdInChunk(){
     return this->idInChunk;
+}
+
+std::string Voxel::getFaceID(int orientationFace){
+    return this->faces[orientationFace].unique_id;
+}
+
+std::string Voxel::getRacineFaceID(){
+    return std::to_string((int)backBottomLeftCorner.x) + " " + std::to_string((int)backBottomLeftCorner.y) + " " + std::to_string((int)backBottomLeftCorner.z) + " ";
+}
+
+std::vector<glm::vec3> Voxel::getVerticesFromFace(int orientation){
+    return this->faces[orientation].vertices;
 }

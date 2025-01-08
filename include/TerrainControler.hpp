@@ -65,7 +65,6 @@ class TerrainControler{
 
         LocalisationBlock detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint);
         std::unordered_map<PositionBlock, int, PositionBlockHash> modifsBlock;
-        void printModif();
         
     public :
         TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure);
@@ -86,6 +85,7 @@ class TerrainControler{
         int* getRefToNbChunkTerrain();
         bool* getRefToGenerateStructure();
         LocalisationBlock tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position);
+        void removeBlock(LocalisationBlock lb, std::string racine_id);
         void breakBlock(LocalisationBlock lb);
         bool tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock);
         void drawTerrain();

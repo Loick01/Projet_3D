@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Headers.hpp>
+#include "variables.h"
 
 #include <fstream>
 
@@ -29,6 +30,10 @@ class Chunk{
         std::vector<glm::vec3> vertices;
         std::vector<int> objectIDs;
         std::vector<int> faceIDs;
+        // Peut être fusionner les 3 maps ci-dessous en utilisant une struct (InfoFace) pour stocker les informations d'une face, et du coup utiliser uniquement une unordered_map<std::string, InfoFace>
+        std::map<std::string, int> map_objectIDs;
+        std::map<std::string, int> map_faceIDs;
+        std::map<std::string, std::vector<glm::vec3>> map_vertices;
         GLuint vertexbuffer;
         GLuint elementbuffer;
         GLuint shaderstoragebuffer;
@@ -37,7 +42,7 @@ class Chunk{
         TerrainControler* currentTerrainControler;
         static const std::set<int> transparentBlock;
 
-        void addIndices(int* compteur);
+        void addIndices(int decalage);
     public:
         Chunk(int i, int j, int k, FastNoise noiseGenerator, int nbTerrainChunk, glm::vec3 position, int typeChunk, unsigned char* dataPixels, unsigned char* dataPixelsCaveAC, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc);
         Chunk(glm::vec3 position, bool referenceChunk); // Ce deuxième constructeur est utilisé uniquement pour construire le terrain en mode éditeur
@@ -49,7 +54,9 @@ class Chunk{
         void buildSinusChunk();
         void buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc, FastNoise noiseGenerator);
         void buildEditorChunk(bool referenceChunk);
-        void buildFace(bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, int* compteur, std::vector<glm::vec3> voxel_vertices);
+        void addFace(Voxel* v_bottom,int orientation);
+        void removeFaces(std::string racine_face_id);
+        void buildFace(std::string unique_id_face, bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, std::vector<glm::vec3> voxel_vertices);
         void loadChunk(TerrainControler* tc = nullptr);
         void drawChunk();
         std::vector<Voxel*> getListeVoxels();

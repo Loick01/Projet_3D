@@ -306,13 +306,6 @@ LocalisationBlock TerrainControler::tryBreakBlock(glm::vec3 camera_target, glm::
     return {-1,-1,-1,-1,-1,-1,0};
 }
 
-void TerrainControler::printModif(){
-    std::cout << "Liste des modifications : \n";
-    for(std::unordered_map<PositionBlock,int>::iterator it = this->modifsBlock.begin(); it != modifsBlock.end(); ++it) {
-        std::cout << it->first.numLongueur << ", " << it->first.numHauteur << ", " << it->first.numProfondeur << " --> " << it->second << "\n";
-    }
-}
-
 std::string TerrainControler::saveModifBlocks(){
     std::stringstream res;
     for(std::unordered_map<PositionBlock,int>::iterator it = this->modifsBlock.begin(); it != modifsBlock.end(); ++it) {
@@ -364,10 +357,79 @@ void TerrainControler::applyModifBlock(std::string infoBlock){
     this->modifsBlock[pb]=typeBlock;
 }
 
+void TerrainControler::removeBlock(LocalisationBlock lb, std::string racine_id){
+    this->listeChunks[lb.indiceChunk]->removeFaces(racine_id); // On enlève les faces du bloc cassé
+    // On ajoute les faces des blocs voisins (s'il existe)
+    // Bloc en dessous (face supérieur)*
+    if (lb.numHauteur>0){
+        int i_chunk_bottom = (lb.numLongueur/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + (lb.numHauteur-1)/32 ;
+        int i_voxel_bottom = ((lb.numHauteur-1)%32)*1024 + (lb.numProfondeur%32) * 32 + (lb.numLongueur%32);
+        Voxel* v_bottom = this->listeChunks[i_chunk_bottom]->getListeVoxels()[i_voxel_bottom];
+        if (v_bottom != nullptr){
+            this->listeChunks[i_chunk_bottom]->addFace(v_bottom,1);
+            if (i_chunk_bottom != lb.indiceChunk) this->listeChunks[i_chunk_bottom]->sendVoxelMapToShader();
+        }
+    }
+    // Bloc au dessus (face inférieur)
+    if (lb.numHauteur < (planeHeight*32)-1){
+        int i_chunk_top = (lb.numLongueur/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + (lb.numHauteur+1)/32 ;
+        int i_voxel_top = ((lb.numHauteur+1)%32)*1024 + (lb.numProfondeur%32) * 32 + (lb.numLongueur%32);
+        Voxel* v_top = this->listeChunks[i_chunk_top]->getListeVoxels()[i_voxel_top];
+        if (v_top != nullptr){
+            this->listeChunks[i_chunk_top]->addFace(v_top,0);
+            if (i_chunk_top != lb.indiceChunk) this->listeChunks[i_chunk_top]->sendVoxelMapToShader();
+        }
+    }
+    // Bloc derrière (face avant)
+    if (lb.numProfondeur > 0){
+        int i_chunk_back = (lb.numLongueur/32) * planeLength * planeHeight + ((lb.numProfondeur-1)/32) * planeHeight + lb.numHauteur/32 ;
+        int i_voxel_back = ((lb.numHauteur)%32)*1024 + ((lb.numProfondeur-1)%32) * 32 + (lb.numLongueur%32);
+        Voxel* v_back = this->listeChunks[i_chunk_back]->getListeVoxels()[i_voxel_back];
+        if (v_back != nullptr){
+            this->listeChunks[i_chunk_back]->addFace(v_back,3);
+            if (i_chunk_back != lb.indiceChunk) this->listeChunks[i_chunk_back]->sendVoxelMapToShader();
+        }
+    }
+    // Bloc devant (face arrière)
+    if (lb.numProfondeur < (planeLength*32)-1){
+        int i_chunk_front = (lb.numLongueur/32) * planeLength * planeHeight + ((lb.numProfondeur+1)/32) * planeHeight + lb.numHauteur/32 ;
+        int i_voxel_front = (lb.numHauteur%32)*1024 + ((lb.numProfondeur+1)%32) * 32 + (lb.numLongueur%32);
+        Voxel* v_front = this->listeChunks[i_chunk_front]->getListeVoxels()[i_voxel_front];
+        if (v_front != nullptr){
+            this->listeChunks[i_chunk_front]->addFace(v_front,2);
+            if (i_chunk_front != lb.indiceChunk) this->listeChunks[i_chunk_front]->sendVoxelMapToShader();
+        }
+    }
+    // Bloc gauche (face droite)
+    if (lb.numLongueur > 0){
+        int i_chunk_left = ((lb.numLongueur-1)/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + lb.numHauteur/32 ;
+        int i_voxel_left = ((lb.numHauteur)%32)*1024 + (lb.numProfondeur%32) * 32 + ((lb.numLongueur-1)%32);
+        Voxel* v_left = this->listeChunks[i_chunk_left]->getListeVoxels()[i_voxel_left];
+        if (v_left != nullptr){
+            this->listeChunks[i_chunk_left]->addFace(v_left,5);
+            if (i_chunk_left != lb.indiceChunk) this->listeChunks[i_chunk_left]->sendVoxelMapToShader();
+        }
+    }
+    // Bloc droite (face gauche)
+    if (lb.numLongueur < (planeWidth*32)-1){
+        int i_chunk_right = ((lb.numLongueur+1)/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + lb.numHauteur/32 ;
+        int i_voxel_right = ((lb.numHauteur)%32)*1024 + (lb.numProfondeur%32) * 32 + ((lb.numLongueur+1)%32);
+        Voxel* v_right = this->listeChunks[i_chunk_right]->getListeVoxels()[i_voxel_right];
+        if (v_right != nullptr){
+            this->listeChunks[i_chunk_right]->addFace(v_right,4);
+            if (i_chunk_right != lb.indiceChunk) this->listeChunks[i_chunk_right]->sendVoxelMapToShader();
+        }
+    }
+    this->listeChunks[lb.indiceChunk]->sendVoxelMapToShader();
+}
+
 void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir testé (au minimum) si lb.indiceVoxel != -1 avant d'appeler cette fonction
     std::vector<Voxel*> listeVoxels = this->listeChunks[lb.indiceChunk]->getListeVoxels();
-    delete listeVoxels[lb.indiceVoxel]; // Ne pas oublier de bien libérer la mémoire
+    Voxel* voxel_deleted = listeVoxels[lb.indiceVoxel];
+    this->removeBlock(lb, voxel_deleted->getRacineFaceID());
+    delete voxel_deleted; // Ne pas oublier de bien libérer la mémoire
     listeVoxels[lb.indiceVoxel] = nullptr;
+    this->listeChunks[lb.indiceChunk]->setListeVoxels(listeVoxels);
 
     // On enregistre la modification pour la sauvegarde
     PositionBlock pb;
@@ -375,10 +437,6 @@ void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir
     pb.numProfondeur = lb.numProfondeur;
     pb.numHauteur = lb.numHauteur;
     this->modifsBlock[pb]=NO_BLOCK;
-    //this->printModif();
-
-    this->listeChunks[lb.indiceChunk]->setListeVoxels(listeVoxels);
-    this->listeChunks[lb.indiceChunk]->loadChunk(this);
 }
 
 bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock){
@@ -412,7 +470,6 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
                 pb.numProfondeur = newBlock.numProfondeur;
                 pb.numHauteur = newBlock.numHauteur;
                 this->modifsBlock[pb]=typeBlock;
-                //this->printModif();
 
                 this->listeChunks[newBlock.indiceChunk]->setListeVoxels(listeVoxels);
                 this->listeChunks[newBlock.indiceChunk]->loadChunk(this);
