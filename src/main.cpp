@@ -16,6 +16,7 @@ GLuint programID, programID_HUD; //,programID_Entity;
 
 bool isImGuiShow = true;
 bool switchToEditor = false;
+int buttonChecked = 0;
 
 // Caméra
 glm::vec3 camera_position;
@@ -47,6 +48,7 @@ int indexHandBlock = 0;
 int handBlock = blockInHotbar[indexHandBlock]; // ID du block que le joueur est en train de poser (se modifie à la molette de la souris)
 
 bool showHud = true;
+bool creatorMod = false;
 int isShadow = 1; // 1 si on utilise les ombres dans le shader, 0 sinon
 bool modeJeu = true; // true pour créatif, false pour survie
 bool playerDie;
@@ -230,9 +232,18 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         glUseProgram(programID);
         glUniform1i(glGetUniformLocation(programID, "indexBlockToBreak"), terrainControler->getPreviousIdInChunk());
     }else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS){
-        if (terrainControler->tryCreateBlock(camera_target, camera_position, handBlock)){
-            soundManager->playCreateSound();
+        if(!creatorMod){
+            if (terrainControler->tryCreateBlock(camera_target, camera_position, handBlock)){
+                soundManager->playCreateSound();
+            }
+        }else{
+            terrainControler->setMouseRightClickHold(true);
+            if (terrainControler->tryCreatorCreateBlock(camera_target, camera_position, handBlock)){
+                soundManager->playCreateSound();
+            }
         }
+    }else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE){
+        terrainControler->setMouseRightClickHold(false);
     }
 }
 
@@ -522,6 +533,10 @@ int main(){
             }
             */
 
+            if (terrainControler->checkHoldRightClick(camera_position, camera_target, deltaTime, modeJeu,handBlock, programID)){
+                soundManager->playCreateSound();
+            }
+
             // Affichage de la skybox
             skybox->drawSkybox(Model, Projection, View);
 
@@ -609,6 +624,7 @@ int main(){
                 delete terrainControler; // On supprime l'ancien terrain (on perd donc les modfications faites dessus)
                 terrainControler = new TerrainControler(); // On génère un unique chunk 
                 terrainControler->setMouseLeftClickHold(false);    
+                terrainControler->setMouseRightClickHold(false);    
                 // TRES IMPORTANT : C'est ça qui causait la segfault qui m'a fait perdre 4 heures
                 // Comme l'instance de TerrainControler est delete, il faut faire attention à bien utiliser la nouvelle instance pour l'instance de ParamsWindow 
                 imgui->attachNewTerrain(terrainControler); 

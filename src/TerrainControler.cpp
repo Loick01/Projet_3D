@@ -2,6 +2,13 @@
 
 std::vector<std::vector<Structure>> TerrainControler::structures; // Permet d'éviter les erreurs de lien à la compilation
 
+float creationDistance=3.0f;
+float radius=1.0f;
+bool brushTool = false;
+bool sphereTool = false;
+bool cubeTool = true;
+bool erasor = false;
+
 TerrainControler::TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure){
     this->planeWidth = planeWidth;
     this->planeLength = planeLength; 
@@ -480,6 +487,216 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
     return false;
 }
 
+bool TerrainControler::tryCreatorCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock){
+    glm::vec3 originPoint = camera_position;
+    glm::vec3 direction = normalize(camera_target);
+    float k = creationDistance; // Pour l'instant le joueur ne peut poser un block qu'à cette distance
+    glm::vec3 target = originPoint + (float)k*direction;
+    int numLongueur = floor(target[0]) + 16*this->planeWidth;
+    int numHauteur = floor(target[1]);      
+    int numProfondeur = floor(target[2]) + 16*this->planeLength;
+    bool surface=true;
+    if (numLongueur < 0 || numLongueur > (this->planeWidth*32)-1 || numProfondeur < 0 || numProfondeur > (this->planeLength*32)-1 || numHauteur < 0 || numHauteur > (this->planeHeight*32)-1){
+        return false;
+    }else{
+        int indiceV = (numHauteur%32)*1024 + (numProfondeur%32) * 32 + (numLongueur%32); // Indice du voxel que le joueur est en train de viser
+        int indiceChunk = (numLongueur/32) * planeLength * planeHeight + (numProfondeur/32) * planeHeight + numHauteur/32 ;
+        
+        std::vector<Voxel*> listeVoxels = this->listeChunks[indiceChunk]->getListeVoxels();
+
+        if(cubeTool){
+            for(int n = -(radius)+1; n<radius;n++){
+                for(int j = -(radius)+1; j<radius;j++){
+                    for(int m = -(radius)+1; m<radius; m++){
+                        if (!(numLongueur+n < 0 || numLongueur+n > (this->planeWidth*32)-1 || numProfondeur+j < 0 || numProfondeur+j > (this->planeLength*32)-1 || numHauteur+m < 0 || numHauteur+m > (this->planeHeight*32)-1)){
+                            int i_chunk = (numLongueur+n)/32 * planeLength * planeHeight + (numProfondeur+j)/32 * planeHeight + (numHauteur+m)/32 ;
+                            if (i_chunk == indiceChunk){
+                                int indiceTotal = indiceV + m*1024 + j*32 + n;
+
+                                if (listeVoxels[indiceTotal] == nullptr){
+                                    glm::vec3 posChunk = this->listeChunks[indiceChunk]->getPosition();
+                                    glm::vec3 posBlock = glm::vec3(posChunk[0]+(numLongueur+n)%32,posChunk[1]+(numHauteur+m)%32,posChunk[2]+(numProfondeur+j)%32);
+                                    Voxel* vox = new Voxel(posBlock,typeBlock);
+                        
+                                    listeVoxels[indiceTotal] = vox;
+
+                                    //gère la lumière
+                                    //int luminosityBlock = vox->getLuminosity();
+
+                                    // printf("hauteur de notre block : %f\n",posBlock.y);
+
+                                    // printf("taille = %d\n",listeVoxels.size());
+
+                                    
+                                    /*
+                                    int hauteurBlocDessous = -1000;
+                                    for(double y2 = 1.0; y2<17.0+listeVoxels[indiceTotal]->getBackBottomLeftCorner().y; y2+=1 ){
+                                        //printf("y2 = %f et max hauteur %f\n",y2,17.0+listeVoxels[indiceTotal]->getBackBottomLeftCorner().y);
+                                        if(listeVoxels[indiceTotal - y2 * 1024]!=nullptr){
+                                            hauteurBlocDessous=y2;
+                                            break;
+                                        }
+                                    }
+                                    int maxLuminosity = 0;
+
+                                    for(double y = 1.0;y<16.0-posBlock.y;y+=1){
+                                        if(listeVoxels[indiceTotal + y * 1024]!=nullptr){
+                                            surface=false;
+                                        }
+                                    }
+                                    if(surface==true){ //si on est a la surface
+                                        // printf("il n'y a pas de bloc au dessus\n");
+                                        // listeVoxels[indiceTotal]->setLuminosity(16); LUMINOSITY
+                                    }else{
+                                        
+                                    }
+                                    */
+
+                                    /* LUMINOSITY
+                                    if(hauteurBlocDessous!=-1000 && listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]!=nullptr){ // si il y'a bien un bloc en dessous
+                                        //updateLight(listeVoxels,indiceTotal,hauteurBlocDessous);
+                                        listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(0);
+                                        // for(int i=-1;i<2;i++){
+                                        //     for(int j=-1;j<2;j++){
+                                        //         //for(int k=-1;k<2;k++){
+                                        //             //int idBlocAdjacent = (numHauteur+k) *1024 + (numProfondeur%32+i) * 32 + (numLongueur%32+j); 
+                                        //             int idBlocAdjacent = indiceTotal - hauteurBlocDessous*1024 + i*32 + j;
+                                        //             // printf("id adjacent = %d\n",idBlocAdjacent);
+                                        //             if(listeVoxels[idBlocAdjacent]!=nullptr){
+                                        //                 maxLuminosity = std::max(maxLuminosity,listeVoxels[idBlocAdjacent]->getLuminosity()-1);
+                                        //                 printf("max luminosity des blocs adjacent : %d\n",listeVoxels[idBlocAdjacent]->getLuminosity());
+                                        //                 printf("i = %d j = %d\n",i,j);
+                                        //             }
+                                        //         //}
+                                        //     }
+                                        // }
+                                        
+                                        for(int i=-3;i<4;i++){
+                                            for(int j=-3;j<4;j++){
+                                                
+                                                int idBlocAdjacent = (numProfondeur%32+i) * 32 + (numLongueur%32+j);
+                                                
+                                                //listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(3);
+                                                if(listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i]!=nullptr){
+                                                    updateLight(listeVoxels,indiceTotal - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i,posBlock + glm::vec3(i,0,j));
+                                                }
+                                            }
+                                        }
+                                        //listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(16);
+                                        //listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(maxLuminosity);
+                            
+                                    }
+                                    */
+                            //on a trouver le bloc en dessous
+                            //printf("id block dessous = %d\n",hauteurBlocDessous);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }else if(sphereTool){
+            for(int n = -radius; n<radius+1;n++){
+                for(int j = -radius; j<radius+1;j++){
+                    for(int m = -radius; m<radius+1; m++){
+                        if (!(numLongueur+n < 0 || numLongueur+n > (this->planeWidth*32)-1 || numProfondeur+j < 0 || numProfondeur+j > (this->planeLength*32)-1 || numHauteur+m < 0 || numHauteur+m > (this->planeHeight*32)-1)){
+                            int i_chunk = (numLongueur+n)/32 * planeLength * planeHeight + (numProfondeur+j)/32 * planeHeight + (numHauteur+m)/32 ;
+                            if (i_chunk == indiceChunk){
+                                int indiceTotal = indiceV + m*1024 + j*32 + n;
+
+                                if (listeVoxels[indiceTotal] == nullptr && (n*n+j*j+m*m)<(radius*radius)){
+                                    glm::vec3 posChunk = this->listeChunks[indiceChunk]->getPosition();
+                                    glm::vec3 posBlock = glm::vec3(posChunk[0]+(numLongueur+n)%32,posChunk[1]+(numHauteur+m)%32,posChunk[2]+(numProfondeur+j)%32);
+                                    Voxel* vox = new Voxel(posBlock,typeBlock);
+                        
+                                    listeVoxels[indiceTotal] = vox;
+
+                                /*
+                                    //gère la lumière
+                                //int luminosityBlock = vox->getLuminosity();
+
+                                // printf("hauteur de notre block : %f\n",posBlock.y);
+
+                                // printf("taille = %d\n",listeVoxels.size());
+
+                                
+
+                                int hauteurBlocDessous = -1000;
+                                for(double y2 = 1.0; y2<17.0+listeVoxels[indiceTotal]->getBackBottomLeftCorner().y; y2+=1 ){
+                                    //printf("y2 = %f et max hauteur %f\n",y2,17.0+listeVoxels[indiceTotal]->getBackBottomLeftCorner().y);
+                                    if(listeVoxels[indiceTotal - y2 * 1024]!=nullptr){
+                                        hauteurBlocDessous=y2;
+                                        break;
+                                    }
+                                }
+                                int maxLuminosity = 0;
+
+                                for(double y = 1.0;y<16.0-posBlock.y;y+=1){
+                                    if(listeVoxels[indiceTotal + y * 1024]!=nullptr){
+                                        surface=false;
+                                    }
+                                }
+                                if(surface==true){ //si on est a la surface
+                                    // printf("il n'y a pas de bloc au dessus\n");
+                                    //listeVoxels[indiceTotal]->setLuminosity(16);
+                                }else{
+                                    
+                                }
+
+                                if(hauteurBlocDessous!=-1000 && listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]!=nullptr){ // si il y'a bien un bloc en dessous
+                                    //updateLight(listeVoxels,indiceTotal,hauteurBlocDessous);
+                                    listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(0);
+                                    // for(int i=-1;i<2;i++){
+                                    //     for(int j=-1;j<2;j++){
+                                    //         //for(int k=-1;k<2;k++){
+                                    //             //int idBlocAdjacent = (numHauteur+k) *1024 + (numProfondeur%32+i) * 32 + (numLongueur%32+j); 
+                                    //             int idBlocAdjacent = indiceTotal - hauteurBlocDessous*1024 + i*32 + j;
+                                    //             // printf("id adjacent = %d\n",idBlocAdjacent);
+                                    //             if(listeVoxels[idBlocAdjacent]!=nullptr){
+                                    //                 maxLuminosity = std::max(maxLuminosity,listeVoxels[idBlocAdjacent]->getLuminosity()-1);
+                                    //                 printf("max luminosity des blocs adjacent : %d\n",listeVoxels[idBlocAdjacent]->getLuminosity());
+                                    //                 printf("i = %d j = %d\n",i,j);
+                                    //             }
+                                    //         //}
+                                    //     }
+                                    // }
+
+                                    for(int i=-3;i<4;i++){
+                                        for(int j=-3;j<4;j++){
+                                            
+                                            int idBlocAdjacent = (numProfondeur%32+i) * 32 + (numLongueur%32+j);
+                                            
+                                            //listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(3);
+                                            if(listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i]!=nullptr){
+                                                updateLight(listeVoxels,indiceTotal - std::abs((hauteurBlocDessous)) * 1024 + j * 32 + i,posBlock + glm::vec3(i,0,j));
+                                            }
+                                        }
+                                    }
+                                    //listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(16);
+                                    //listeVoxels[indiceTotal - std::abs((hauteurBlocDessous)) * 1024 ]->setLuminosity(maxLuminosity);
+                                }
+                                */
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+
+            
+
+        this->listeChunks[indiceChunk]->setListeVoxels(listeVoxels);
+        this->listeChunks[indiceChunk]->loadChunk(this);
+        
+        return true;
+    }
+
+    return false;
+}
+
 void TerrainControler::drawTerrain(){
     for (int i = 0 ; i < this->listeChunks.size() ; i++){
         this->listeChunks[i]->drawChunk();
@@ -548,12 +765,31 @@ bool TerrainControler::checkHoldLeftClick(glm::vec3 camera_position, glm::vec3 c
     return false;
 }
 
+bool TerrainControler::checkHoldRightClick(glm::vec3 camera_position, glm::vec3 camera_target, float deltaTime, bool modeJeu,int handBlock, GLuint programID){
+    if (this->mouseRightClickHold){
+        bool created;
+        if (creatorMod){
+            created = this->tryCreatorCreateBlock(camera_target, camera_position, handBlock);
+        }else{
+            created = this->tryCreateBlock(camera_target, camera_position, handBlock);
+        }
+        return true;
+    }
+    return false;
+}
+
 void TerrainControler::setMouseLeftClickHold(bool mouseLeftClickHold){
     this->mouseLeftClickHold = mouseLeftClickHold;
 }
 
 bool TerrainControler::getMouseLeftClickHold(){
     return mouseLeftClickHold;
+}
+void TerrainControler::setMouseRightClickHold(bool mouseRightClickHold){
+    this->mouseRightClickHold = mouseRightClickHold;
+}
+bool TerrainControler::getMouseRightClickHold(){
+    return mouseRightClickHold;
 }
 
 int TerrainControler::getPreviousIdInChunk(){
