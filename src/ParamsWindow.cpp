@@ -3,6 +3,7 @@
 char ParamsWindow::nameStructure[512]; // Permet d'éviter les erreurs de lien à la compilation
 int ParamsWindow::widthScreen = 0;
 int ParamsWindow::heightScreen = 0;
+std::string currentStruct =" ";
 
 ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player){
     this->style = style;
@@ -164,7 +165,7 @@ void ParamsWindow::openBuilderTools()
             buttonStates.resize(this->txtFiles.size(), false);
         }
 
-        int buttonIndex = 0; // Numéro des boutons
+        int buttonIndex = 1; // Numéro des boutons
 
         // PROBLEME AVEC LES BOUTONS IMAGES, CHARGEMENT TEXTURES?
 
@@ -174,28 +175,21 @@ void ParamsWindow::openBuilderTools()
             if (!buttonTexture) {
                 std::cerr << "Erreur de chargement de la texture pour " << fileName << std::endl;
             }
+            
 
-            // Affichage du bouton avec l'image
-            // if (ImGui::ImageButton((ImTextureID)(intptr_t)buttonTexture, ImVec2(256, 256))) {
-            //     // Si le bouton est cliqué, alterner l'état du bouton
-            //     buttonStates[buttonIndex] = !buttonStates[buttonIndex];
-            //     std::cout << "Bouton " << buttonIndex + 1 << " cliqué" << std::endl;
-                
-            //     // Débogage supplémentaire pour vérifier si l'événement de clic est déclenché
-            //     std::cout << "buttonStates[" << buttonIndex << "] = " << buttonStates[buttonIndex] << std::endl;
-            // }
+            ImGui::Image((ImTextureID)(intptr_t)buttonTexture, ImVec2(64, 64));
 
-            std::string buttonLabel = std::to_string(buttonIndex + 1); // Numéro du bouton (1-indexed)
+            ImGui::SameLine(); // Aligne les boutons sur la même ligne
+
+            //std::string buttonLabel = std::to_string(buttonIndex + 1); // Numéro du bouton (1-indexed)
+            std::string buttonLabel = fileName.substr(0, fileName.size() - 4);
             if (ImGui::Button(buttonLabel.c_str(), ImVec2(64, 64))) {
                 buttonStates[buttonIndex] = !buttonStates[buttonIndex]; // alterne l'état
-                buttonChecked=buttonIndex+1;
-                //std::cout << "Bouton " << buttonIndex + 1 << " cliqué" << std::endl;
+                buttonChecked=buttonIndex-1;
+                currentStruct=buttonLabel;
+                std::cout << "Bouton " << buttonIndex + 1 << " cliqué" << std::endl;
             }
 
-            // // Affichage du message si l'état du bouton est "coché"
-            // if (buttonStates[buttonIndex]) {
-            //     ImGui::Text("Bouton %d est coché", buttonIndex + 1);  // Affiche un message si le bouton est coché
-            // }
             
 
 
@@ -219,9 +213,50 @@ void ParamsWindow::openBuilderTools()
             
         }
 
+        
+
+
+
+        
+
         // Si aucun fichier trouvé
         if (this->txtFiles.empty()) {
+            ImGui::NewLine();
             ImGui::Text("Aucun fichier .txt trouvé dans ../Structures.");
+        }
+
+        // Affichage du message si l'état du bouton est "coché"
+        if (currentStruct!=" ") {
+            ImGui::NewLine();
+            ImGui::Text("Structure selectionnée : %s",  currentStruct.c_str());  // Affiche un message si le bouton est coché
+        }
+
+        ImGui::NewLine();
+
+        ImGui::Spacing();
+
+        ImGui::Checkbox("Mode créateur", &creatorMod);
+
+        ImGui::Spacing();
+
+        if(creatorMod){
+            ImGui::SliderFloat("Distance creation block", &creationDistance, 1.0, 20.0,"%1.f");
+            ImGui::SliderFloat("radius", &radius, 1.0, 10.0,"%1.f");
+            if (ImGui::Checkbox("Pinceau", &brushTool)){
+                sphereTool = false;
+                cubeTool = false;
+            };
+            if (ImGui::Checkbox("Sphere", &sphereTool)){
+                brushTool = false;
+                cubeTool = false;
+            };
+            if (ImGui::Checkbox("Cube", &cubeTool)){
+                sphereTool = false;
+                brushTool = false;
+            };
+            ImGui::Checkbox("Gomme", &erasor);
+
+            ImGui::Spacing();
         }
 
         // Fin de la fenêtre ImGui
@@ -534,30 +569,6 @@ void ParamsWindow::draw(){
     ImGui::Checkbox("Afficher l'hud", &showHud);
 
     ImGui::Spacing();
-
-    ImGui::Checkbox("Mode créateur", &creatorMod);
-
-    ImGui::Spacing();
-
-    if(creatorMod){
-        ImGui::SliderFloat("Distance creation block", &creationDistance, 1.0, 20.0,"%1.f");
-        ImGui::SliderFloat("radius", &radius, 1.0, 10.0,"%1.f");
-        if (ImGui::Checkbox("Pinceau", &brushTool)){
-            sphereTool = false;
-            cubeTool = false;
-        };
-        if (ImGui::Checkbox("Sphere", &sphereTool)){
-            brushTool = false;
-            cubeTool = false;
-        };
-        if (ImGui::Checkbox("Cube", &cubeTool)){
-            sphereTool = false;
-            brushTool = false;
-        };
-        ImGui::Checkbox("Gomme", &erasor);
-
-        ImGui::Spacing();
-    }
 
     ImGui::Checkbox("Mode de jeu (créatif/survie)", &modeJeu);
 

@@ -113,13 +113,21 @@ void TerrainControler::buildStructures(unsigned char* dataPixels){
             // Attention à bien en compte les chunks en hauteur qui ne sont pas utilisés pour la génération du terrain
             int k = CHUNK_SIZE*(this->planeHeight-this->nbChunkTerrain) + ((int)dataPixels[indInText]) + 1;
             if (rand()%100 == 0){
-                this->constructStructure(i,j,k);
+                int biomeID = 0;
+                if (this->biomeChart){
+                    FastNoise noiseGenerator = this->mg->getNoiseGenerator();
+                    float precipitation = (noiseGenerator.GetNoise((i), (j))+1.0)/2.0;
+                    float humidite = (noiseGenerator.GetNoise((i + 1000), (j + 1500))+1.0)/2.0;
+                    biomeID = this->getBiomeID(precipitation,humidite); // On utilise la position x et z du block pour déterminer le biome
+                    
+                }
+                this->constructStructure(i,j,k,rand()%structures[biomeID].size(),true);
             }
         }
     }
 }
 
-void TerrainControler::constructStructure(int i, int j, int k){
+void TerrainControler::constructStructure(int i, int j, int k,int idStruct,bool rand){ // rand = true si génération automatique, false si construction par le joueur
     // Peut être mettre un champ biomeID dans la classe Voxel au lieu de rechercher dans la biome chart ici
     int biomeID = 0;
     if (this->biomeChart){
@@ -131,7 +139,13 @@ void TerrainControler::constructStructure(int i, int j, int k){
 
     int indChunk = -1;
     glm::vec3 posChunk;
-    Structure to_build = structures[biomeID][rand()%structures[biomeID].size()]; // On construit l'une des structures disponibles 
+    Structure to_build;
+    if(rand == false){
+        to_build = structures[3][idStruct]; // construction manuel donc on va chercher dans le vecteur 4 (indice 3)
+    }else{
+        to_build = structures[biomeID][idStruct]; // On construit l'une des structures disponibles 
+    }
+
     std::vector<Voxel*> getListe;
     for (int n = 0 ; n < to_build.blocks.size() ; n++){
         int *infoBlock = to_build.blocks[n].infoBlock;
