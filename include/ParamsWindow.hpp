@@ -48,11 +48,15 @@ class ParamsWindow{
         void rebuildBiomeChart(CelluleBiome* currentCell, std::string next_word, int startPos, bool isInCC);
         bool showBuilderWindow;
 
+
         static int widthScreen;
         static int heightScreen;
 
         bool newStructure;
+        std::string nameNewStructure;
         std::vector<std::string> txtFiles;
+        std::vector<GLint> textureIDs;
+        std::vector<bool> buttonStates;
 
     public:
         ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player);

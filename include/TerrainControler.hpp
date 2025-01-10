@@ -89,6 +89,7 @@ class TerrainControler{
         bool* getRefToGenerateStructure();
         LocalisationBlock tryBreakBlock(glm::vec3 camera_target, glm::vec3 camera_position);
         void removeBlock(LocalisationBlock lb, std::string racine_id);
+        void addBlock(LocalisationBlock lb, Voxel* newVox);
         void breakBlock(LocalisationBlock lb);
         bool tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock);
         bool tryCreatorCreateBlock(glm::vec3 camera_target, glm::vec3 camera_position, int typeBlock);

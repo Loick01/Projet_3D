@@ -314,6 +314,13 @@ void Chunk::addFace(Voxel* v_bottom,int orientation){
     this->map_vertices[face_id] = v_bottom->getVerticesFromFace(orientation);
 }
 
+void Chunk::removeFace(Voxel* v_bottom,int orientation){
+    std::string face_id = v_bottom->getRacineFaceID() + std::to_string(orientation);
+    this->map_objectIDs.erase(face_id);
+    this->map_faceIDs.erase(face_id);
+    this->map_vertices.erase(face_id);
+}
+
 void Chunk::removeFaces(std::string racine_face_id){
     for (int i = 0 ; i < 6 ; i++){
         std::string face_unique_id = racine_face_id + std::to_string(i);

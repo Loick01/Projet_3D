@@ -55,6 +55,7 @@ class Chunk{
         void buildProceduralChunk(unsigned char* dataPixels, int widthHeightmap, int heightHeightmap, int posWidthChunk, int posLengthChunk, int seed, int hauteurChunkTerrain, TerrainControler* tc, FastNoise noiseGenerator);
         void buildEditorChunk(bool referenceChunk);
         void addFace(Voxel* v_bottom,int orientation);
+        void removeFace(Voxel* v_bottom,int orientation);
         void removeFaces(std::string racine_face_id);
         void buildFace(std::string unique_id_face, bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, std::vector<glm::vec3> voxel_vertices);
         void loadChunk(TerrainControler* tc = nullptr);
