@@ -537,6 +537,27 @@ void TerrainControler::removeBlock(LocalisationBlock lb, std::string racine_id){
 }
 
 void TerrainControler::breakBlock(LocalisationBlock lb){ // Il faut déjà avoir testé (au minimum) si lb.indiceVoxel != -1 avant d'appeler cette fonction
+    bool isSurface = true;
+    for (int k = lb.numHauteur+1 ; k < planeHeight*32 ; k++){
+        int new_indiceV = (k%32)*1024 + (lb.numProfondeur%32) * 32 + (lb.numLongueur%32);
+        int new_indiceChunk = (lb.numLongueur/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + k/32 ;
+        if (this->listeChunks[new_indiceChunk]->getListeVoxels()[new_indiceV] != nullptr){
+            isSurface = false;
+            break;
+        }
+    }
+    if (isSurface){
+        for (int k = lb.numHauteur-1 ; k >= 0 ; k--){
+            int new_indiceV = (k%32)*1024 + (lb.numProfondeur%32) * 32 + (lb.numLongueur%32);
+            int new_indiceChunk = (lb.numLongueur/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + k/32 ;
+            if (this->listeChunks[new_indiceChunk]->getListeVoxels()[new_indiceV] != nullptr){
+                this->listeChunks[new_indiceChunk]->getListeVoxels()[new_indiceV]->setLumValue(16);
+                this->listeChunks[new_indiceChunk]->updateLum(new_indiceV);
+                break;
+            }
+        }
+    }
+
     std::vector<Voxel*> listeVoxels = this->listeChunks[lb.indiceChunk]->getListeVoxels();
     Voxel* voxel_deleted = listeVoxels[lb.indiceVoxel];
     this->removeBlock(lb, voxel_deleted->getRacineFaceID());
@@ -578,6 +599,30 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
                 listeVoxels[newBlock.indiceVoxel] = vox;
 
                 this->listeChunks[newBlock.indiceChunk]->setListeVoxels(listeVoxels);
+
+                bool isSurface = true;
+                for (int k = newBlock.numHauteur+1 ; k < planeHeight*32 ; k++){
+                    int new_indiceV = (k%32)*1024 + (newBlock.numProfondeur%32) * 32 + (newBlock.numLongueur%32);
+                    int new_indiceChunk = (newBlock.numLongueur/32) * planeLength * planeHeight + (newBlock.numProfondeur/32) * planeHeight + k/32 ;
+                    if (this->listeChunks[new_indiceChunk]->getListeVoxels()[new_indiceV] != nullptr){
+                        isSurface = false;
+                        break;
+                    }
+                }
+                if (isSurface){
+                    vox->setLumValue(16);
+                }
+
+                for (int k = newBlock.numHauteur-1 ; k >= 0 ; k--){
+                    int new_indiceV = (k%32)*1024 + (newBlock.numProfondeur%32) * 32 + (newBlock.numLongueur%32);
+                    int new_indiceChunk = (newBlock.numLongueur/32) * planeLength * planeHeight + (newBlock.numProfondeur/32) * planeHeight + k/32 ;
+                    if (this->listeChunks[new_indiceChunk]->getListeVoxels()[new_indiceV] != nullptr){
+                        this->listeChunks[new_indiceChunk]->getListeVoxels()[new_indiceV]->setLumValue(3);
+                        this->listeChunks[new_indiceChunk]->updateLum(new_indiceV);
+                        break;
+                    }
+                }
+
                 this->addBlock(newBlock,vox);
                 //this->listeChunks[newBlock.indiceChunk]->loadChunk(this);
                 // On enregistre la modification pour la sauvegarde
@@ -587,7 +632,6 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
                 pb.numHauteur = newBlock.numHauteur;
                 this->modifsBlock[pb]=typeBlock;
 
-                
                 return true;
             }
         }

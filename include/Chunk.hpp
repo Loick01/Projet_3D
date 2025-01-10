@@ -15,6 +15,7 @@
 #define SAND_BLOCK 7
 #define GLASS_BLOCK 20
 #define LEAVES_BLOCK 23
+#define PUMPKIN 26
 
 class Voxel; // Déclaration avancée (je ne comprends pas pourquoi on est obligé de faire ça, avant ce n'était pas nécéssaire)
 
@@ -30,13 +31,16 @@ class Chunk{
         std::vector<glm::vec3> vertices;
         std::vector<int> objectIDs;
         std::vector<int> faceIDs;
+        std::vector<int> luminosityIDs;
         // Peut être fusionner les 3 maps ci-dessous en utilisant une struct (InfoFace) pour stocker les informations d'une face, et du coup utiliser uniquement une unordered_map<std::string, InfoFace>
         std::map<std::string, int> map_objectIDs;
         std::map<std::string, int> map_faceIDs;
+        std::map<std::string, int> map_luminosityIDs;
         std::map<std::string, std::vector<glm::vec3>> map_vertices;
         GLuint vertexbuffer;
         GLuint elementbuffer;
         GLuint shaderstoragebuffer;
+        GLuint shaderstoragebuffer2;
         GLuint shaderstoragebuffer3;
         // int ID;
         TerrainControler* currentTerrainControler;
@@ -57,12 +61,13 @@ class Chunk{
         void addFace(Voxel* v_bottom,int orientation);
         void removeFace(Voxel* v_bottom,int orientation);
         void removeFaces(std::string racine_face_id);
-        void buildFace(std::string unique_id_face, bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, std::vector<glm::vec3> voxel_vertices);
+        void buildFace(std::string unique_id_face, bool cond1,int a1, int dec, int a2, int voxel_id, int8_t v1, int8_t v2, int8_t v3, std::vector<glm::vec3> voxel_vertices, int lum_value);
         void loadChunk(TerrainControler* tc = nullptr);
         void drawChunk();
         std::vector<Voxel*> getListeVoxels();
         void setListeVoxels(std::vector<Voxel*> newListeVoxels);
         glm::vec3 getPosition();
+        void updateLum(int i_v);
 
         void sendVoxelMapToShader();
 };

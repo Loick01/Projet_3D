@@ -19,6 +19,11 @@ layout(std430, binding = 0) buffer layoutObjectID
     int dataID[];
 };
 
+layout(std430, binding = 1) buffer layoutLuminosityID
+{
+    int dataLuminosity[];
+};
+
 layout(std430, binding = 2) buffer layoutFaceID
 {
     int faceID[];
@@ -58,6 +63,9 @@ void main(){
                 isCurrentlyBreaking = 0.0;
         }
         //shadow_value = shadows[gl_VertexID%24];
+        for (int  i = 0 ; i < 24 ; i++){
+        	shadows[i] = shadows[i]/16 * dataLuminosity[gl_VertexID/4];
+        }
         shadow_value = shadows[faceID[gl_VertexID/4]*4 + gl_VertexID%4];
         uv_coord = texCoords[gl_VertexID%4];
         uv_coord[0] += objectID%5*0.2003;

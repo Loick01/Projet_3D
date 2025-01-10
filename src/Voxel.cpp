@@ -4,6 +4,7 @@ Voxel::Voxel(glm::vec3 position, int objectID){
     this->backBottomLeftCorner = position;
     this->buildVoxel();
     this->objectID = objectID;
+    this->lum_value = 3;
 }
 
 Voxel::~Voxel(){
@@ -91,4 +92,12 @@ std::string Voxel::getRacineFaceID(){
 
 std::vector<glm::vec3> Voxel::getVerticesFromFace(int orientation){
     return this->faces[orientation].vertices;
+}
+
+int Voxel::getLumValue(){
+    return this->lum_value;
+}
+
+void Voxel::setLumValue(int lum_value){
+    this->lum_value = lum_value;
 }

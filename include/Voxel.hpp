@@ -15,6 +15,7 @@ class Voxel {
         int objectID;
         //bool isVisible;
         int idInChunk;
+        int lum_value;
     public:
         glm::vec3 backBottomLeftCorner;
         Voxel(glm::vec3 position, int objectID);
@@ -31,4 +32,6 @@ class Voxel {
         std::string getFaceID(int orientationFace);
         std::string getRacineFaceID();
         std::vector<glm::vec3> getVerticesFromFace(int orientation);
+        int getLumValue();
+        void setLumValue(int lum_value);
 };
