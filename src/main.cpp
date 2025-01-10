@@ -115,10 +115,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_J && action == GLFW_PRESS){
 
         LocalisationBlock blockIsTargeted = terrainControler->detectTargetBlock(camera_position, camera_position + (float)RANGE*normalize(camera_target));
-        terrainControler->constructStructure(blockIsTargeted.numLongueur,blockIsTargeted.numProfondeur,blockIsTargeted.numHauteur,buttonChecked,false);
+        terrainControler->constructStructure(blockIsTargeted.numLongueur,blockIsTargeted.numProfondeur,blockIsTargeted.numHauteur+1,buttonChecked,false);
 
 
-        terrainControler->loadTerrain();
+        // terrainControler->loadTerrain();
 
         // ou si on veut juste load le chunk mais ne marche pas
 

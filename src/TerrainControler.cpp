@@ -141,7 +141,7 @@ void TerrainControler::constructStructure(int i, int j, int k,int idStruct,bool 
     int indChunk = -1;
     glm::vec3 posChunk;
     Structure to_build;
-    if(rand == false){
+    if(!rand){
         to_build = structures[3][idStruct]; // construction manuel donc on va chercher dans le vecteur 4 (indice 3)
     }else{
         to_build = structures[biomeID][idStruct]; // On construit l'une des structures disponibles 
@@ -164,18 +164,20 @@ void TerrainControler::constructStructure(int i, int j, int k,int idStruct,bool 
                 Voxel *new_block = new Voxel(glm::vec3(posChunk[0]+(i+infoBlock[1])%32,posChunk[1]+(k+infoBlock[2])%32,posChunk[2]+(j+infoBlock[3])%32),infoBlock[0]); 
                 getListe[((k + infoBlock[2])%32)*1024 + ((j+infoBlock[3])%32) * 32 + ((i+infoBlock[1])%32)] = new_block;
                 this->listeChunks[indChunk]->setListeVoxels(getListe);
-                //actual_voxel=new_block;
+                actual_voxel=new_block;
 
             }
-            // if(!rand){
-            //     int indiceV = (k%32)*1024 + (j%32)*32 + (i%32); // Indice du voxel que le joueur est en train de viser
-            //     int indiceChunk = (i/32) * planeLength * planeHeight + (j/32) * planeHeight + k/32 ;
+            if(!rand){
+                LocalisationBlock loc;
+                loc.numLongueur = i+infoBlock[1];
+                loc.numHauteur = k+infoBlock[2];
+                loc.numProfondeur = j+infoBlock[3];
+                loc.indiceChunk = newIDChunk;
+                loc.indiceVoxel = (loc.numHauteur%32)*1024 + (loc.numProfondeur%32)*32 + (loc.numLongueur%32);
 
-            //     LocalisationBlock lock = {indiceV,indiceChunk,i,j,k,0,0};
-
-            //     this->removeBlock(lock,actual_voxel->getRacineFaceID());
-            //     this->addBlock(lock,actual_voxel);
-            // }
+                this->removeBlock(loc,actual_voxel->getRacineFaceID());
+                this->addBlock(loc,actual_voxel);
+            }
         }
     }
 }
@@ -791,9 +793,6 @@ bool TerrainControler::tryCreatorCreateBlock(glm::vec3 camera_target, glm::vec3 
             }
         }
         
-
-            
-
         this->listeChunks[indiceChunk]->setListeVoxels(listeVoxels);
         this->listeChunks[indiceChunk]->loadChunk(this);
         
@@ -825,8 +824,8 @@ void TerrainControler::saveStructure(std::string filePath){
                     Voxel *v = voxelsToSave[i];
                     if (v != nullptr){
                         int dec_x = -16 + i%32 + n_chunk_width*CHUNK_SIZE; // Décalage en x
-                        int dec_y = -16 + (i/32)%32 + n_chunk_height*CHUNK_SIZE + 1; // Décalage en y
-                        int dec_z = -16 + i/(32*32) + n_chunk_length*CHUNK_SIZE; // Décalage en z
+                        int dec_z = -16 + (i/32)%32 + n_chunk_height*CHUNK_SIZE; // Décalage en y
+                        int dec_y = -16 + i/(32*32) + n_chunk_length*CHUNK_SIZE; // Décalage en z
                         // Attention à bien mettre un espace à la fin, avant le retour à la ligne
                         fileStructure << v->getID() << " " << dec_x << " " << dec_y << " " << dec_z << " \n";
                     }

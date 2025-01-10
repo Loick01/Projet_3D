@@ -65,7 +65,6 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
 
     for (const auto& fileName : this->txtFiles) {
         this->buttonStates.push_back(false);
-        printf("file name = %s\n",fileName.c_str());
         GLuint id = loadTexture2DFromFilePath("../Structures/" + fileName.substr(0, fileName.size() - 4) + ".png");
         if (!id) {
             std::cerr << "Erreur de chargement de la texture pour " << fileName << std::endl;
@@ -168,13 +167,15 @@ void ParamsWindow::openBuilderTools()
             buttonStates.push_back(false);
         }
 
-        // Début de la fenêtre ImGui
         ImGui::Begin("ToolWindow");
 
-
-        //std::string buttonLabel = std::to_string(buttonIndex + 1); // Numéro du bouton (1-indexed)
-
         for(int i=0;i<textureIDs.size();i++){
+            if (i % 4) {
+                ImGui::SameLine(); // Nouvelle ligne pour les boutons
+            } else {
+                ImGui::NewLine(); // Aligne les boutons sur la même ligne
+            }
+
             ImGui::Image((ImTextureID)(intptr_t)textureIDs[i], ImVec2(64, 64));
             ImGui::SameLine(); // Aligne les boutons sur la même ligne
             std::string buttonLabel = txtFiles[i].substr(0, txtFiles[i].size() - 4);
@@ -184,12 +185,6 @@ void ParamsWindow::openBuilderTools()
                 currentStruct=buttonLabel;
             }
 
-            // Si le nombre de boutons atteint 4, passez à la ligne suivante
-            if (i % 4 == 0 && i!=0) {
-                ImGui::NewLine(); // Nouvelle ligne pour les boutons
-            } else {
-                ImGui::SameLine(); // Aligne les boutons sur la même ligne
-            }
         }
 
         // Si aucun fichier trouvé
@@ -198,10 +193,9 @@ void ParamsWindow::openBuilderTools()
             ImGui::Text("Aucun fichier .txt trouvé dans ../Structures.");
         }
 
-        // Affichage du message si l'état du bouton est "coché"
         if (currentStruct!=" ") {
             ImGui::NewLine();
-            ImGui::Text("Structure selectionnée : %s",  currentStruct.c_str());  // Affiche un message si le bouton est coché
+            ImGui::Text("Structure selectionnée : %s",  currentStruct.c_str());
         }
 
         ImGui::NewLine();
