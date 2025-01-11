@@ -114,7 +114,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     if (key == GLFW_KEY_R && action == GLFW_PRESS){
         LocalisationBlock blockIsTargeted = terrainControler->detectTargetBlock(camera_position, camera_position + (float)RANGE*normalize(camera_target));
-        terrainControler->constructStructure(blockIsTargeted.numLongueur,blockIsTargeted.numProfondeur,blockIsTargeted.numHauteur+1,buttonChecked,false);
+        if (blockIsTargeted.numLongueur != -1){ // Teste si position valide
+            terrainControler->constructStructure(blockIsTargeted.numLongueur,blockIsTargeted.numProfondeur,blockIsTargeted.numHauteur+1,buttonChecked,false);
+        }
     }
 }
 

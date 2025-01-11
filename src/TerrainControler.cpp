@@ -409,7 +409,10 @@ void TerrainControler::addBlock(LocalisationBlock lb, Voxel* newVox){
         if (v_bottom == nullptr || Chunk::transparentBlock.count(v_bottom->getID())){
             this->listeChunks[lb.indiceChunk]->addFace(newVox,0);
         }
+    }else{ // lb.numHauteur = 0
+        this->listeChunks[lb.indiceChunk]->addFace(newVox,0);
     }
+
     // Bloc au dessus (face inférieur)
     if (lb.numHauteur < (planeHeight*32)-1){
         int i_chunk_top = (lb.numLongueur/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + (lb.numHauteur+1)/32 ;
@@ -422,7 +425,10 @@ void TerrainControler::addBlock(LocalisationBlock lb, Voxel* newVox){
         if (v_top == nullptr || Chunk::transparentBlock.count(v_top->getID())){
             this->listeChunks[lb.indiceChunk]->addFace(newVox,1);
         }
+    }else{ // lb.numHauteur = planeHeight*32 - 1
+        this->listeChunks[lb.indiceChunk]->addFace(newVox,1);
     }
+
     // Bloc derrière (face avant)
     if (lb.numProfondeur > 0){
         int i_chunk_back = (lb.numLongueur/32) * planeLength * planeHeight + ((lb.numProfondeur-1)/32) * planeHeight + lb.numHauteur/32 ;
@@ -435,7 +441,10 @@ void TerrainControler::addBlock(LocalisationBlock lb, Voxel* newVox){
         if (v_back == nullptr || Chunk::transparentBlock.count(v_back->getID())){
             this->listeChunks[lb.indiceChunk]->addFace(newVox,2);
         }
+    }else{ // lb.numProfondeur = 0
+        this->listeChunks[lb.indiceChunk]->addFace(newVox,2);
     }
+
     // Bloc devant (face arrière)
     if (lb.numProfondeur < (planeLength*32)-1){
         int i_chunk_front = (lb.numLongueur/32) * planeLength * planeHeight + ((lb.numProfondeur+1)/32) * planeHeight + lb.numHauteur/32 ;
@@ -448,7 +457,11 @@ void TerrainControler::addBlock(LocalisationBlock lb, Voxel* newVox){
         if (v_front == nullptr || Chunk::transparentBlock.count(v_front->getID())){
             this->listeChunks[lb.indiceChunk]->addFace(newVox,3);
         }
+    }else{ // lb.numProfondeur = planeLength*32-1
+        this->listeChunks[lb.indiceChunk]->addFace(newVox,3);
     }
+
+
     // Bloc gauche (face droite)
     if (lb.numLongueur > 0){
         int i_chunk_left = ((lb.numLongueur-1)/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + lb.numHauteur/32 ;
@@ -461,7 +474,10 @@ void TerrainControler::addBlock(LocalisationBlock lb, Voxel* newVox){
         if (v_left == nullptr || Chunk::transparentBlock.count(v_left->getID())){
             this->listeChunks[lb.indiceChunk]->addFace(newVox,4);
         }
+    }else{ // lb.numLongueur = 0
+        this->listeChunks[lb.indiceChunk]->addFace(newVox,4);
     }
+
     // Bloc droite (face gauche)
     if (lb.numLongueur < (planeWidth*32)-1){
         int i_chunk_right = ((lb.numLongueur+1)/32) * planeLength * planeHeight + (lb.numProfondeur/32) * planeHeight + lb.numHauteur/32 ;
@@ -474,7 +490,10 @@ void TerrainControler::addBlock(LocalisationBlock lb, Voxel* newVox){
         if (v_right == nullptr || Chunk::transparentBlock.count(v_right->getID())){
             this->listeChunks[lb.indiceChunk]->addFace(newVox,5);
         }
+    }else{ // lb.numLongueur = planeWidth*32-1
+        this->listeChunks[lb.indiceChunk]->addFace(newVox,5);
     }
+
     this->listeChunks[lb.indiceChunk]->sendVoxelMapToShader();
 }
 
