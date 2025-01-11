@@ -5,6 +5,10 @@
 // Temporaire (tant que ces variables n'ont pas été mise dans des classes)
 #include "variables.h"
 
+#define STRUCTURE_ICONE_SIZE 128
+#define NB_COLONNE_ICONE 3
+#define SIZE_SCREEN_STRUCTURE 600
+
 class ParamsWindow{
     private:
         int style; // 0 pour Dark, 1 pour Light, sinon Classic
@@ -48,11 +52,15 @@ class ParamsWindow{
         void rebuildBiomeChart(CelluleBiome* currentCell, std::string next_word, int startPos, bool isInCC);
         bool showBuilderWindow;
 
+
         static int widthScreen;
         static int heightScreen;
 
         bool newStructure;
+        std::string nameNewStructure;
         std::vector<std::string> txtFiles;
+        std::vector<GLint> textureIDs;
+        std::vector<bool> buttonStates;
 
     public:
         ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player);

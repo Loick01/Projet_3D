@@ -3,6 +3,7 @@
 char ParamsWindow::nameStructure[512]; // Permet d'éviter les erreurs de lien à la compilation
 int ParamsWindow::widthScreen = 0;
 int ParamsWindow::heightScreen = 0;
+std::string currentStruct =" ";
 
 ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terrainControler, Player *player){
     this->style = style;
@@ -36,6 +37,42 @@ ParamsWindow::ParamsWindow(GLFWwindow* window, int style, TerrainControler *terr
     this->terrainControler->setBiomeChart(this->racineBiomeChart); // Biome Chart par défaut
     this->showBuilderWindow = true;
     this->newStructure = false;
+
+    const std::string directoryPath = "../Structures";
+    
+    // Ouvrir le répertoire
+    DIR* dir = opendir(directoryPath.c_str());
+    if (dir != nullptr) {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            // Vérifie si c'est un fichier régulier (pas un répertoire)
+            if (entry->d_type == DT_REG) {
+                std::string fileName = entry->d_name;
+
+                // Vérifie l'extension .txt
+                if (fileName.size() >= 4 && fileName.substr(fileName.size() - 4) == ".txt") {
+                    this->txtFiles.push_back(fileName);
+                }
+            }
+        }
+        closedir(dir);
+    } else {
+        std::cerr << "Impossible d'ouvrir le répertoire : " << directoryPath << std::endl;
+    }
+
+    // Trie les fichiers par ordre alphabétique
+    std::sort(this->txtFiles.begin(), this->txtFiles.end());
+
+    for (const auto& fileName : this->txtFiles) {
+        this->buttonStates.push_back(false);
+        GLuint id = loadTexture2DFromFilePath("../Structures/" + fileName.substr(0, fileName.size() - 4) + ".png");
+        if (!id) {
+            std::cerr << "Erreur de chargement de la texture pour " << fileName << std::endl;
+        }
+        this->textureIDs.push_back(id);
+    }
+
+
 }
 
 ParamsWindow::~ParamsWindow(){
@@ -123,105 +160,68 @@ void ParamsWindow::openBuilderTools()
     if (showBuilderWindow)
     {
         // Vecteur pour stocker les noms des fichiers .txt
-        if (!this->newStructure){
-            this->txtFiles.clear();
-            // Répertoire à parcourir
-            const std::string directoryPath = "../Structures";
-
-            // Ouvrir le répertoire
-            DIR* dir = opendir(directoryPath.c_str());
-            if (dir != nullptr) {
-                struct dirent* entry;
-                while ((entry = readdir(dir)) != nullptr) {
-                    // Vérifie si c'est un fichier régulier (pas un répertoire)
-                    if (entry->d_type == DT_REG) {
-                        std::string fileName = entry->d_name;
-
-                        // Vérifie l'extension .txt
-                        if (fileName.size() >= 4 && fileName.substr(fileName.size() - 4) == ".txt") {
-                            this->txtFiles.push_back(fileName);
-                        }
-                    }
-                }
-                closedir(dir);
-            } else {
-                std::cerr << "Impossible d'ouvrir le répertoire : " << directoryPath << std::endl;
-            }
-
-            // Trie les fichiers par ordre alphabétique
-            std::sort(this->txtFiles.begin(), this->txtFiles.end());
-            this->newStructure = true;
+        if (this->newStructure){
+            this->newStructure=false;
+            txtFiles.push_back(nameNewStructure + ".txt");
+            textureIDs.push_back(loadTexture2DFromFilePath("../Structures/" + nameNewStructure + ".png"));
+            buttonStates.push_back(false);
         }
-
-        // Début de la fenêtre ImGui
+        ImGui::SetNextWindowSize(ImVec2(NB_COLONNE_ICONE*STRUCTURE_ICONE_SIZE + (NB_COLONNE_ICONE-1) * ImGui::GetStyle().ItemSpacing.x, 800), ImGuiCond_Always);
         ImGui::Begin("ToolWindow");
-
-        std::vector<bool> buttonStates;
-
-            // On vérifie si la taille de buttonStates correspond à la taille du nombre de fichiers
-        if (buttonStates.size() != this->txtFiles.size()) {
-            // Si la taille ne correspond pas, on réinitialise le vecteur à la taille correcte
-            buttonStates.resize(this->txtFiles.size(), false);
+        ImGui::Columns(NB_COLONNE_ICONE, nullptr, false);
+        for (int i = 0 ; i < NB_COLONNE_ICONE ; i++){
+            ImGui::SetColumnWidth(i, STRUCTURE_ICONE_SIZE); 
         }
-
-        int buttonIndex = 0; // Numéro des boutons
-
-        // PROBLEME AVEC LES BOUTONS IMAGES, CHARGEMENT TEXTURES?
-
-        for (const auto& fileName : this->txtFiles) {
-            buttonStates[buttonIndex]=false;
-            GLuint buttonTexture = loadTexture2DFromFilePath("../Structures/" + fileName.substr(0, fileName.size() - 4) + ".png");
-            if (!buttonTexture) {
-                std::cerr << "Erreur de chargement de la texture pour " << fileName << std::endl;
+        for(int i=0;i<textureIDs.size();i++){
+            
+            ImGui::Image((ImTextureID)(intptr_t)textureIDs[i], ImVec2(STRUCTURE_ICONE_SIZE, STRUCTURE_ICONE_SIZE));
+            ImGui::Spacing();
+            std::string buttonLabel = txtFiles[i].substr(0, txtFiles[i].size() - 4);
+            if (ImGui::Button(buttonLabel.c_str(), ImVec2(STRUCTURE_ICONE_SIZE, 32))) {
+                buttonStates[i] = !buttonStates[i]; // alterne l'état
+                buttonChecked=i;
+                currentStruct=buttonLabel;
             }
-
-            // Affichage du bouton avec l'image
-            // if (ImGui::ImageButton((ImTextureID)(intptr_t)buttonTexture, ImVec2(256, 256))) {
-            //     // Si le bouton est cliqué, alterner l'état du bouton
-            //     buttonStates[buttonIndex] = !buttonStates[buttonIndex];
-            //     std::cout << "Bouton " << buttonIndex + 1 << " cliqué" << std::endl;
-                
-            //     // Débogage supplémentaire pour vérifier si l'événement de clic est déclenché
-            //     std::cout << "buttonStates[" << buttonIndex << "] = " << buttonStates[buttonIndex] << std::endl;
-            // }
-
-            std::string buttonLabel = std::to_string(buttonIndex + 1); // Numéro du bouton (1-indexed)
-            if (ImGui::Button(buttonLabel.c_str(), ImVec2(64, 64))) {
-                buttonStates[buttonIndex] = !buttonStates[buttonIndex]; // alterne l'état
-                buttonChecked=buttonIndex+1;
-                //std::cout << "Bouton " << buttonIndex + 1 << " cliqué" << std::endl;
-            }
-
-            // // Affichage du message si l'état du bouton est "coché"
-            // if (buttonStates[buttonIndex]) {
-            //     ImGui::Text("Bouton %d est coché", buttonIndex + 1);  // Affiche un message si le bouton est coché
-            // }
-            
-
-
-            
-
-            
-
-                        // Restauration de la couleur du bouton
-            // if (buttonStates[buttonIndex]) {
-            //     ImGui::PopStyleColor();
-            // }
-
-
-            // Si le nombre de boutons atteint 4, passez à la ligne suivante
-            if (buttonIndex % 4 == 0) {
-                ImGui::NewLine(); // Nouvelle ligne pour les boutons
-            } else {
-                ImGui::SameLine(); // Aligne les boutons sur la même ligne
-            }
-            buttonIndex++;
-            
+            ImGui::NextColumn();
         }
 
         // Si aucun fichier trouvé
         if (this->txtFiles.empty()) {
+            ImGui::NewLine();
             ImGui::Text("Aucun fichier .txt trouvé dans ../Structures.");
+        }
+
+        if (currentStruct!=" ") {
+            ImGui::NewLine();
+            ImGui::Text("Structure selectionnée : %s",  currentStruct.c_str());
+        }
+
+        ImGui::NewLine();
+
+        ImGui::Spacing();
+
+        ImGui::Checkbox("Mode créateur", &creatorMod);
+
+        ImGui::Spacing();
+
+        if(creatorMod){
+            ImGui::SliderFloat("Distance creation block", &creationDistance, 1.0, 20.0,"%1.f");
+            ImGui::SliderFloat("radius", &radius, 1.0, 10.0,"%1.f");
+            if (ImGui::Checkbox("Pinceau", &brushTool)){
+                sphereTool = false;
+                cubeTool = false;
+            };
+            if (ImGui::Checkbox("Sphere", &sphereTool)){
+                brushTool = false;
+                cubeTool = false;
+            };
+            if (ImGui::Checkbox("Cube", &cubeTool)){
+                sphereTool = false;
+                brushTool = false;
+            };
+            ImGui::Checkbox("Gomme", &erasor);
+
+            ImGui::Spacing();
         }
 
         // Fin de la fenêtre ImGui
@@ -535,30 +535,6 @@ void ParamsWindow::draw(){
 
     ImGui::Spacing();
 
-    ImGui::Checkbox("Mode créateur", &creatorMod);
-
-    ImGui::Spacing();
-
-    if(creatorMod){
-        ImGui::SliderFloat("Distance creation block", &creationDistance, 1.0, 20.0,"%1.f");
-        ImGui::SliderFloat("radius", &radius, 1.0, 10.0,"%1.f");
-        if (ImGui::Checkbox("Pinceau", &brushTool)){
-            sphereTool = false;
-            cubeTool = false;
-        };
-        if (ImGui::Checkbox("Sphere", &sphereTool)){
-            brushTool = false;
-            cubeTool = false;
-        };
-        if (ImGui::Checkbox("Cube", &cubeTool)){
-            sphereTool = false;
-            brushTool = false;
-        };
-        ImGui::Checkbox("Gomme", &erasor);
-
-        ImGui::Spacing();
-    }
-
     ImGui::Checkbox("Mode de jeu (créatif/survie)", &modeJeu);
 
     ImGui::Spacing();
@@ -595,8 +571,9 @@ void ParamsWindow::draw(){
             if (filePath.size() != 0){
                 this->terrainControler->saveStructure(filePath);
                 std::string pngStructure = std::string(nameStructure) + ".png";
-                this->saveScreenshot("../Structures/" + pngStructure,ParamsWindow::widthScreen,ParamsWindow::heightScreen,200,200);
-                this->newStructure = false;
+                this->saveScreenshot("../Structures/" + pngStructure,ParamsWindow::widthScreen,ParamsWindow::heightScreen,SIZE_SCREEN_STRUCTURE,SIZE_SCREEN_STRUCTURE);
+                this->newStructure = true;
+                this->nameNewStructure=nameStructure;
             }else{
                 std::cout << "Veuillez saisir un nom pour le fichier de la structure\n";
             }

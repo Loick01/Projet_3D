@@ -61,13 +61,15 @@ class TerrainControler{
         bool biomeChart;
 
         static std::vector<std::vector<Structure>> structures;
-        void constructStructure(int i, int j, int k);
+        
         bool generateStructure;
 
-        LocalisationBlock detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint);
+        
         std::unordered_map<PositionBlock, int, PositionBlockHash> modifsBlock;
         
     public :
+        void constructStructure(int i, int j, int k, int idStruct,bool rand);
+        LocalisationBlock detectTargetBlock(glm::vec3 startPoint, glm::vec3 endPoint);
         TerrainControler(int planeWidth, int planeLength, int planeHeight, int typeChunk, int seedTerrain, int octave, std::vector<std::vector<std::string>> nomStructure);
         TerrainControler(); // Ce deuxième constructeur ne sera appelé que pour créer le terrain utilisé par le mode éditeur
         ~TerrainControler();

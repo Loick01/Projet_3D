@@ -111,6 +111,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             cameraOrbitale = false;
             cameraLibre = !cameraMouseLibre;
     }
+
+    if (key == GLFW_KEY_R && action == GLFW_PRESS){
+        LocalisationBlock blockIsTargeted = terrainControler->detectTargetBlock(camera_position, camera_position + (float)RANGE*normalize(camera_target));
+        terrainControler->constructStructure(blockIsTargeted.numLongueur,blockIsTargeted.numProfondeur,blockIsTargeted.numHauteur+1,buttonChecked,false);
+    }
 }
 
 void processInput(GLFWwindow* window){ 
@@ -365,26 +370,77 @@ int main(){
     //programID_Entity = LoadShaders("../shaders/entity_vertex.vert", "../shaders/entity_frag.frag");
 
     std::vector<std::string> structureBiome0;
-    structureBiome0.push_back("../Structures/Tree.txt");
-    structureBiome0.push_back("../Structures/Tree_2.txt");
-    structureBiome0.push_back("../Structures/Tree_3.txt");
-    structureBiome0.push_back("../Structures/House_1.txt");
+    structureBiome0.push_back("../Structures/arbre.txt");
+    structureBiome0.push_back("../Structures/arbre_2.txt");
+    structureBiome0.push_back("../Structures/maison.txt");
 
     std::vector<std::string> structureBiome1;
     structureBiome1.push_back("../Structures/arche.txt");
     structureBiome1.push_back("../Structures/cactus_amas.txt");
     structureBiome1.push_back("../Structures/cactus_simple_1.txt");
     structureBiome1.push_back("../Structures/cactus_simple_2.txt");
+    structureBiome1.push_back("../Structures/tour.txt");
 
     std::vector<std::string> structureBiome2;
-    structureBiome2.push_back("../Structures/Glace.txt");
-    structureBiome2.push_back("../Structures/Sapin.txt");
+    structureBiome2.push_back("../Structures/glace_amas.txt");
+    structureBiome2.push_back("../Structures/sapin.txt");
+
+    std::vector<std::string> PersonnalStructure;
 
     std::vector<std::vector<std::string>> nomStructure;
 
     nomStructure.push_back(structureBiome0);
     nomStructure.push_back(structureBiome1);
     nomStructure.push_back(structureBiome2);
+
+    
+    // DEBUT NOUVEAU VECTEUR AVEC TOUTES LES STRUCTURES
+    const std::string directoryPath = "../Structures";
+    std::vector<std::string> allTxtFiles;
+
+    
+    DIR* dir = opendir(directoryPath.c_str());
+    if (dir == nullptr) {
+        std::cerr << "Impossible d'ouvrir le répertoire : " << directoryPath << std::endl;
+    }
+
+    // Parcourir les fichiers du répertoire
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        // Vérifier si c'est un fichier régulier
+        if (entry->d_type == DT_REG) {
+            std::string fileName = entry->d_name;
+
+            // Vérifier l'extension .txt
+            if (fileName.size() >= 4 && fileName.substr(fileName.size() - 4) == ".txt") {
+                std::string fullPath = directoryPath + "/" + fileName;
+                allTxtFiles.push_back(fullPath);
+            }
+        }
+    }
+
+    closedir(dir);
+
+    // Trier les fichiers par ordre alphabétique
+    std::sort(allTxtFiles.begin(), allTxtFiles.end());
+
+    // Ajouter les noms des fichiers dans un vecteur (chaque fichier est une "ligne")
+    std::vector<std::string> sortedTxtFiles;
+    for (const std::string& fileName : allTxtFiles) {
+        sortedTxtFiles.push_back(fileName);
+    }
+
+    // Ajouter ce vecteur au vecteur principal
+    nomStructure.push_back(sortedTxtFiles);
+
+
+    // for(int i = 0;i<sortedTxtFiles.size();i++){
+    //     printf(" nom = %s\n",sortedTxtFiles[i].c_str());
+    // }
+
+    // FIN NOUVEAU VECTEURS STRUCTURES
+
+
 
     terrainControler = new TerrainControler(2, 2, 2, 3, 1000, 4, nomStructure);
     camera_position = glm::vec3(0.0f, terrainControler->getPlaneHeight()*32.0f, 0.0f);
