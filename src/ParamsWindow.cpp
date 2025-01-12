@@ -444,6 +444,9 @@ void ParamsWindow::openConfigTerrain(){
         this->modifTerrain(false);
 
         // A partir de là, on lit les modifications des blocs
+        // Attention à bien prendre en compte les changements si on fait une autre sauvegarde par la suite
+        // Donc bien penser à supprimer les modifs faites jusque là, et sauvegarder les modifs du fichier de sauvegarde (fait dans applyModifBlock)
+        this->terrainControler->clearModifsBlock();
         while (std::getline(saveFile, next_line)) {
             this->terrainControler->applyModifBlock(next_line);
         }

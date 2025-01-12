@@ -352,7 +352,6 @@ std::string TerrainControler::saveModifBlocks(){
 void TerrainControler::applyModifBlock(std::string infoBlock){
     std::istringstream flux_infoBlock(infoBlock);
     std::string next_word;
-    this->modifsBlock.clear();
 
     flux_infoBlock >> next_word;
     int nWidth = std::stoi(next_word);
@@ -494,6 +493,13 @@ void TerrainControler::addBlock(LocalisationBlock lb, Voxel* newVox){
         this->listeChunks[lb.indiceChunk]->addFace(newVox,5);
     }
 
+    // On enregistre la modification pour la sauvegarde
+    PositionBlock pb;
+    pb.numLongueur = lb.numLongueur;
+    pb.numProfondeur = lb.numProfondeur;
+    pb.numHauteur = lb.numHauteur;
+    this->modifsBlock[pb]=newVox->getID();
+
     this->listeChunks[lb.indiceChunk]->sendVoxelMapToShader();
 }
 
@@ -607,14 +613,6 @@ bool TerrainControler::tryCreateBlock(glm::vec3 camera_target, glm::vec3 camera_
 
                 this->listeChunks[newBlock.indiceChunk]->setListeVoxels(listeVoxels);
                 this->addBlock(newBlock,vox);
-                //this->listeChunks[newBlock.indiceChunk]->loadChunk(this);
-                // On enregistre la modification pour la sauvegarde
-                PositionBlock pb;
-                pb.numLongueur = newBlock.numLongueur;
-                pb.numProfondeur = newBlock.numProfondeur;
-                pb.numHauteur = newBlock.numHauteur;
-                this->modifsBlock[pb]=typeBlock;
-
                 
                 return true;
             }
@@ -976,4 +974,8 @@ void TerrainControler::setUseBiomeChart(bool biomeChart){
 
 bool TerrainControler::hasBiomeChart(){
     return this->biomeChart;
+}
+
+void TerrainControler::clearModifsBlock(){
+    this->modifsBlock.clear();
 }

@@ -115,4 +115,5 @@ class TerrainControler{
         static Structure readStructureFile(std::ifstream &file);
         std::string saveModifBlocks();
         void applyModifBlock(std::string infoBlock);
+        void clearModifsBlock();
 };
