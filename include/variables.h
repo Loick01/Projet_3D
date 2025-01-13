@@ -27,10 +27,8 @@ struct CelluleBiome{
 extern bool creatorMod;
 extern float creationDistance;
 extern float radius;
-extern bool brushTool;
 extern bool sphereTool;
 extern bool cubeTool;
-extern bool erasor;
 
 extern int buttonChecked;
 
